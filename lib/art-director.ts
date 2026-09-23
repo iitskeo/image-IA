@@ -24,7 +24,7 @@ STEP 3 — Write ONE prompt in English, 150-250 words, in this order:
 2. Hero: what the hero is, its scale and exact position in the frame. It must be instantly clear (people dancing for a dance event, the product for a product promo). One hero only — no collages, abstract filler or stock scenes.
 3. Design layer: only what the recipe calls for, with the exact zone of each text block (e.g. "headline top-left in the upper 25%"). Text zones must NEVER overlap or touch the hero — keep clear space around it.
 4. Typography (max two styles, described concretely) and the color palette in words. NEVER write hex codes, color codes or swatches.
-5. Finish: the quality bar (premium campaign poster, crisp, meticulous alignment).
+Convey quality ONLY through concrete visual choices (lighting, lens, materials, texture). Never add abstract quality or summary phrases such as "premium", "meticulously crafted", "campaign poster", "hero photograph" or "high quality" — image models tend to render those as captions. End the prompt with the typography/color sentence, not with a summary. The only words in double quotes are the on-image texts.
 Avoid anything that screams AI or template: props or bases the concept doesn't need (boards, pedestals, crates, plants), stock collages, random badges, emoji-like icons, stickers, caution tape, glossy plastic skin, oversaturated gradients, fake UI.
 
 Attached reference product (when the brief lists "Image 1" as the user's reference): call it "the exact product from Image 1, reproduced unchanged — identical shape, colors, materials and printed graphics". Do NOT describe its graphics, characters or colors in your own words, and do NOT name the franchise, character or brand printed on it (the image model would "correct" them toward the "official" look) — just "the product" / "the tumbler". It may be upright or slightly tilted/levitating for energy, but its appearance must stay identical. If a logo image is listed, say "the logo from Image N reproduced exactly as provided".
@@ -58,10 +58,15 @@ export function buildTextLock(allowedTexts: string[], hasReference: boolean, log
   ].filter(Boolean);
   const exceptionNote = exceptions.length ? ` (apart from ${exceptions.join(" and ")})` : "";
 
+  // Los modelos llegaron a dibujar frases descriptivas del propio prompt
+  // (ej. "meticulously crafted, premium hero photograph") como leyenda.
+  const noCaptionNote =
+    " None of the descriptive words of this prompt (style, quality, lighting or camera terms) may ever appear as text or captions in the image.";
+
   if (!allowedTexts.length) {
-    return `\n\nText rule: no text, letters, numbers, captions or watermarks anywhere in the image${exceptionNote}.`;
+    return `\n\nText rule: no text, letters, numbers, captions or watermarks anywhere in the image${exceptionNote}.${noCaptionNote}`;
   }
-  return `\n\nText rule: the ONLY text in the image is ${allowedTexts.map((t) => `"${t}"`).join(", ")} — each spelled exactly as written${exceptionNote}. No other text anywhere: no other social media handles, hashtags, URLs, extra bullet points, prices, slogans, watermarks or placeholder text.`;
+  return `\n\nText rule: the ONLY text in the image is ${allowedTexts.map((t) => `"${t}"`).join(", ")} — each spelled exactly as written${exceptionNote}. No other text anywhere: no captions, taglines, other social media handles, hashtags, URLs, extra bullet points, prices, slogans, watermarks or placeholder text.${noCaptionNote}`;
 }
 
 // Si el director de arte falla, se usan las pautas de la plantilla tal cual

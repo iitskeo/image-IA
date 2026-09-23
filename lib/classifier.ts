@@ -102,8 +102,11 @@ del usuario los campos "titulo" y "lugar".
 "beneficios": solo en piezas promocionales de un producto con imagen de referencia: 2-3 beneficios
 muy cortos (1-4 palabras cada uno, en el idioma del usuario) basados ÚNICAMENTE en lo que se ve
 en la foto (material visible, tipo de tapa, diseño/estampado, acabado) o en lo que dijo el usuario.
-NUNCA afirmes propiedades que no se pueden ver (ej. "aislamiento térmico", "mantiene el frío 24 h",
-"libre de BPA", "resistente al agua") salvo que el usuario las haya dicho. Tampoco nombres
+Solo atributos FÍSICOS VISIBLES: material, color, acabado, forma, estampado (ej. "Acero inoxidable",
+"Tapa negra", "Diseño exclusivo"). NUNCA adjetivos funcionales o de desempeño, porque no se pueden
+ver en una foto (ej. "hermética", "antiderrames", "térmico", "aislamiento térmico", "mantiene el
+frío 24 h", "libre de BPA", "resistente al agua", "duradero", "ergonómico") salvo que el usuario
+los haya dicho. Tampoco nombres
 personajes ni marcas registradas del estampado (di "Diseño exclusivo", no el nombre del personaje).
 En cualquier otro caso, lista vacía.
 
