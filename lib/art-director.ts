@@ -61,7 +61,7 @@ export function buildTextLock(allowedTexts: string[], hasReference: boolean, log
   if (!allowedTexts.length) {
     return `\n\nText rule: no text, letters, numbers, captions or watermarks anywhere in the image${exceptionNote}.`;
   }
-  return `\n\nText rule: the ONLY text in the image is ${allowedTexts.map((t) => `"${t}"`).join(", ")} — each spelled exactly as written${exceptionNote}. No other text anywhere: no social media handles, hashtags, URLs, feature lists, prices, slogans, watermarks or placeholder text.`;
+  return `\n\nText rule: the ONLY text in the image is ${allowedTexts.map((t) => `"${t}"`).join(", ")} — each spelled exactly as written${exceptionNote}. No other text anywhere: no other social media handles, hashtags, URLs, extra bullet points, prices, slogans, watermarks or placeholder text.`;
 }
 
 // Si el director de arte falla, se usan las pautas de la plantilla tal cual
@@ -71,11 +71,32 @@ export interface ArtDirection {
   style?: string;
 }
 
-export async function directArt(guidelines: string, allowedTexts: string[]): Promise<ArtDirection> {
-  const textList = allowedTexts.length
-    ? allowedTexts.map((t) => `- "${t}"`).join("\n")
-    : "(empty — no text in the image)";
-  const brief = `${guidelines}\n\nFINAL on-image text list:\n${textList}`;
+// Todo el texto permitido en la imagen, separado por rol para ubicarlo bien.
+export interface TextPlan {
+  main: string[];
+  bullets: string[];
+  footer: string[];
+}
+
+export function allTexts(plan: TextPlan): string[] {
+  return [...plan.main, ...plan.bullets, ...plan.footer];
+}
+
+function formatTextPlan(plan: TextPlan): string {
+  if (!allTexts(plan).length) return "(empty — no text in the image)";
+  const section = (title: string, items: string[]) =>
+    items.length ? `${title}:\n${items.map((t) => `- "${t}"`).join("\n")}` : "";
+  return [
+    section("Main text (headline and key info)", plan.main),
+    section("Benefit bullets (small list under the headline)", plan.bullets),
+    section("Footer (small, at the bottom)", plan.footer),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export async function directArt(guidelines: string, plan: TextPlan): Promise<ArtDirection> {
+  const brief = `${guidelines}\n\nFINAL on-image text list:\n${formatTextPlan(plan)}`;
 
   try {
     const ai = getClient();

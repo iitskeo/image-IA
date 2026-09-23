@@ -6,11 +6,11 @@ import {
   type ImageProvider,
   type ReferenceImage,
 } from "@/lib/providers/image-provider";
-import { buildTextLock, directArt } from "@/lib/art-director";
+import { allTexts, buildTextLock, directArt, type TextPlan } from "@/lib/art-director";
 import { GeminiNanoBananaProvider } from "@/lib/providers/gemini-nano-banana";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { isAspectRatio } from "@/lib/aspect-ratio";
-import { sanitizeBrandDna } from "@/lib/brand-dna";
+import { sanitizeBrandDna, socialHandleFromLink } from "@/lib/brand-dna";
 import {
   ValidationError,
   validatePrompt,
@@ -115,15 +115,22 @@ export async function POST(request: Request) {
     // varias), en vez de solo "dejar espacio" — nunca en retratos.
     const logoImage = showBrand ? parseDataUrl(brandDna?.logoImage) : undefined;
 
-    // Todo el texto permitido en la imagen, para el candado de texto final.
+    // Todo el texto permitido en la imagen, por rol. El @ de redes sale solo
+    // del link real del ADN — sin ADN nunca aparece uno inventado.
     const contactText = [brandDna?.contactPhone, brandDna?.contactWebsite, brandDna?.contactAddress]
       .filter(Boolean)
       .join(" · ");
-    const allowedTexts = [
-      ...(isPortrait ? [] : classification.textosExactos ?? []),
-      ...(showBrand && !logoImage && brandDna?.name ? [brandDna.name] : []),
-      ...(showContact && contactText ? [contactText] : []),
-    ];
+    const socialHandle = showBrand ? socialHandleFromLink(brandDna?.socialLink) : undefined;
+    const textPlan: TextPlan = {
+      main: isPortrait ? [] : classification.textosExactos ?? [],
+      bullets: isPortrait ? [] : classification.beneficios ?? [],
+      footer: [
+        ...(showBrand && !logoImage && brandDna?.name ? [brandDna.name] : []),
+        ...(socialHandle ? [socialHandle] : []),
+        ...(showContact && contactText ? [contactText] : []),
+      ],
+    };
+    const allowedTexts = allTexts(textPlan);
 
     const guidelines = buildPromptForCategory(classification.categoria, {
       userPrompt: prompt,
@@ -134,7 +141,7 @@ export async function POST(request: Request) {
       brandDna,
     });
 
-    const direction = await directArt(guidelines, allowedTexts);
+    const direction = await directArt(guidelines, textPlan);
     const finalPrompt =
       direction.prompt + buildTextLock(allowedTexts, Boolean(referenceImage), Boolean(logoImage));
 

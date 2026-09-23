@@ -19,6 +19,7 @@ export interface ClassificationResult {
   lugar?: string;
   estilo?: string;
   textosExactos?: string[];
+  beneficios?: string[];
   incluirContacto?: boolean;
   incluirMarca?: boolean;
   necesitaAclaracion?: boolean;
@@ -93,9 +94,18 @@ sí lo redactas tú con ortografía perfecta, corto y claro, y debe comunicar QU
 Piezas promocionales (poster, post de redes, anuncio) SIEMPRE llevan al menos un titular corto
 en el idioma del usuario, aunque no lo haya dictado (ej. "Nuevo producto", "Ya disponible").
 Máximo 1-3 textos salvo que el usuario pida más. NUNCA inventes usuarios (@), hashtags, URLs,
-listas de características, precios ni slogans que el usuario no dio. Fotos de producto puro y
+precios ni slogans que el usuario no dio (las características del producto no van aquí, van en
+"beneficios"). Fotos de producto puro y
 retratos: lista vacía salvo que el usuario pida texto. Copia también con la ortografía exacta
 del usuario los campos "titulo" y "lugar".
+
+"beneficios": solo en piezas promocionales de un producto con imagen de referencia: 2-3 beneficios
+muy cortos (1-4 palabras cada uno, en el idioma del usuario) basados ÚNICAMENTE en lo que se ve
+en la foto (material visible, tipo de tapa, diseño/estampado, acabado) o en lo que dijo el usuario.
+NUNCA afirmes propiedades que no se pueden ver (ej. "aislamiento térmico", "mantiene el frío 24 h",
+"libre de BPA", "resistente al agua") salvo que el usuario las haya dicho. Tampoco nombres
+personajes ni marcas registradas del estampado (di "Diseño exclusivo", no el nombre del personaje).
+En cualquier otro caso, lista vacía.
 
 Sobre "incluirContacto" e "incluirMarca": solo aplican si el mensaje indica que el usuario eligió
 un ADN de marca. "incluirMarca" = que la imagen muestre la marca (su logo, o su nombre si no hay
@@ -144,6 +154,12 @@ const RESPONSE_SCHEMA = {
       items: { type: Type.STRING },
       description:
         "Textos que deben aparecer escritos en la imagen, copiados exactamente como los escribió el usuario. Vacío si la imagen no lleva texto.",
+    },
+    beneficios: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "2-3 beneficios cortos del producto, solo de lo visible en la foto de referencia o dicho por el usuario. Vacío si no aplica.",
     },
     incluirContacto: {
       type: Type.BOOLEAN,
@@ -287,6 +303,12 @@ export async function classifyPrompt(
         .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
         .map((t) => t.trim().slice(0, 120))
         .slice(0, 8)
+    : [];
+  parsed.beneficios = Array.isArray(parsed.beneficios)
+    ? parsed.beneficios
+        .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+        .map((t) => t.trim().slice(0, 40))
+        .slice(0, 3)
     : [];
 
   // Blindaje: descarta preguntas de aclaración mal formadas (sin texto o sin

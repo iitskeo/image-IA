@@ -19,7 +19,7 @@ export const ART_STYLES: ArtStyle[] = [
     photography:
       "Clean premium studio hero shot: the product alone, large and confident in frame (about 55-65% of the height), on a seamless dark backdrop with a soft tonal gradient falloff. Crisp rim light defining the silhouette and a soft key light revealing the real materials. The product may stand upright or have a slight dynamic tilt / gentle levitation with a soft shadow below for energy. No tables, boards, pedestals, crates, plants or props.",
     design:
-      "Restraint: one bold modern headline (e.g. tall condensed sans-serif, all caps) set in clean negative space away from the product, and at most one small secondary line. No decorative rules, bars, frames, glows or background motifs — the product and the typography carry the piece.",
+      "Restraint: one bold modern headline (e.g. tall condensed sans-serif, all caps) set in clean negative space away from the product; if provided, a small list of 2-3 short benefit bullets under the headline in the same typeface family; if provided, one small footer line (e.g. the brand's social handle) centered at the bottom. No decorative rules, bars, frames, glows or background motifs — the product and the typography carry the piece.",
   },
   {
     id: "luxury_campaign",
