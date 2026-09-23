@@ -134,18 +134,25 @@ export async function POST(request: Request) {
       brandDna,
     });
 
+    const direction = await directArt(guidelines, allowedTexts);
     const finalPrompt =
-      (await directArt(guidelines, allowedTexts)) +
-      buildTextLock(allowedTexts, Boolean(referenceImage), Boolean(logoImage));
+      direction.prompt + buildTextLock(allowedTexts, Boolean(referenceImage), Boolean(logoImage));
 
+    console.info(`[director de arte] categoría=${classification.categoria} receta=${direction.style ?? "plantilla"}`);
     if (process.env.NODE_ENV !== "production") {
       console.info(`[pautas de plantilla · ${classification.categoria}]\n${guidelines}`);
-      console.info(`[prompt del director de arte]\n${finalPrompt}`);
+      console.info(`[prompt final]\n${finalPrompt}`);
     }
 
     // Solo en desarrollo: revisar el razonamiento sin pagar una imagen.
     if (process.env.NODE_ENV !== "production" && formData.get("dryRun") === "1") {
-      return NextResponse.json({ dryRun: true, classification, logoAttached: Boolean(logoImage), finalPrompt });
+      return NextResponse.json({
+        dryRun: true,
+        classification,
+        style: direction.style,
+        logoAttached: Boolean(logoImage),
+        finalPrompt,
+      });
     }
 
     const images = [referenceImage, logoImage].filter((img): img is ReferenceImage => Boolean(img));

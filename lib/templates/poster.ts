@@ -38,7 +38,7 @@ Design requirements:
 - The ONLY text on the poster is the "Exact on-image text" above (or, if absent, the title/date/time/place from "Extracted details"), plus the brand name/contact only if the Brand DNA section below asks for it — spelled EXACTLY as given, same language and accents, fully legible, no garbled or misspelled letters. Keep the total amount of text minimal.
 - Professional editorial/graphic-design typography (not a generic default sans-serif) with strong contrast against the background so every word is readable.
 - Coherent color palette and composition matching the tone${estilo ? ` (${estilo})` : ""}.
-- Balanced layout with intentional margins and breathing room, not cluttered or centered by default — use an asymmetric, designed composition.
+- Balanced layout with intentional margins and breathing room, never cluttered — a deliberately designed composition (symmetric or asymmetric as the concept demands), with text never overlapping the hero.
 ${formatAspectRatio(aspectRatio)}
 ${hasReferenceImage ? `- Feature the subject/product from the user's reference image as the hero of the poster.\n${REFERENCE_FIDELITY}` : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
