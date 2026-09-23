@@ -89,9 +89,13 @@ nunca copies textos que aparezcan dentro de la imagen de referencia (esa imagen 
 producto, no el texto a escribir). Nombres propios, precios, fechas y horas se copian EXACTAMENTE
 como los escribió el usuario (si escribió "Katanas", es "Katanas"; nunca los corrijas). El titular
 sí lo redactas tú con ortografía perfecta, corto y claro, y debe comunicar QUÉ es la pieza (ej.
-"Noche de baile" + "Cumpleaños de Jen", o "¡Últimas unidades!"), no solo un dato suelto. Sin
-relleno ni textos que el usuario no pidió. Si la imagen no lleva texto, lista vacía. Copia también
-con la ortografía exacta del usuario los campos "titulo" y "lugar".
+"Noche de baile" + "Cumpleaños de Jen", o "¡Últimas unidades!"), no solo un dato suelto.
+Piezas promocionales (poster, post de redes, anuncio) SIEMPRE llevan al menos un titular corto
+en el idioma del usuario, aunque no lo haya dictado (ej. "Nuevo producto", "Ya disponible").
+Máximo 1-3 textos salvo que el usuario pida más. NUNCA inventes usuarios (@), hashtags, URLs,
+listas de características, precios ni slogans que el usuario no dio. Fotos de producto puro y
+retratos: lista vacía salvo que el usuario pida texto. Copia también con la ortografía exacta
+del usuario los campos "titulo" y "lugar".
 
 Sobre "incluirContacto" e "incluirMarca": solo aplican si el mensaje indica que el usuario eligió
 un ADN de marca. "incluirMarca" = que la imagen muestre la marca (su logo, o su nombre si no hay

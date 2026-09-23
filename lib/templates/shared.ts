@@ -35,6 +35,11 @@ export function formatDetails(
   return lines.length ? `\nExtracted details:\n${lines.join("\n")}` : "";
 }
 
+// El modelo tendía a "redibujar" el producto de la referencia (ej. cambiar el
+// color de un gráfico al look "oficial" de un personaje, o inclinarlo y
+// perder detalles). Se trata como una foto de producto real que no se toca.
+export const REFERENCE_FIDELITY = `- The product/subject from the user's reference image must appear EXACTLY as in that photo: identical shape, proportions, colors, materials, finish and every printed graphic, logo and text on it. Do not redraw, recolor, restyle, simplify or "correct" any part of it (never change a graphic's colors to match a character's official look). Keep it in a natural, stable pose close to the reference angle (standing, not floating or heavily tilted) so every detail stays intact.`;
+
 // Textos que el usuario quiere literalmente en la imagen, tal cual los
 // escribió (el clasificador los extrae sin corregir ortografía de nombres).
 export function formatExactTexts(texts: string[] | undefined): string {

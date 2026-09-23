@@ -6,7 +6,7 @@ import {
   type ImageProvider,
   type ReferenceImage,
 } from "@/lib/providers/image-provider";
-import { directArt } from "@/lib/art-director";
+import { buildTextLock, directArt } from "@/lib/art-director";
 import { GeminiNanoBananaProvider } from "@/lib/providers/gemini-nano-banana";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { isAspectRatio } from "@/lib/aspect-ratio";
@@ -107,12 +107,23 @@ export async function POST(request: Request) {
       });
     }
 
+    const isPortrait = classification.categoria === "retrato_avatar";
+    const showBrand = Boolean(brandDna && classification.incluirMarca && !isPortrait);
+    const showContact = Boolean(brandDna && classification.incluirContacto && !isPortrait);
+
     // El logo real del ADN se manda como imagen adicional (Nano Banana acepta
     // varias), en vez de solo "dejar espacio" — nunca en retratos.
-    const logoImage =
-      classification.incluirMarca && classification.categoria !== "retrato_avatar"
-        ? parseDataUrl(brandDna?.logoImage)
-        : undefined;
+    const logoImage = showBrand ? parseDataUrl(brandDna?.logoImage) : undefined;
+
+    // Todo el texto permitido en la imagen, para el candado de texto final.
+    const contactText = [brandDna?.contactPhone, brandDna?.contactWebsite, brandDna?.contactAddress]
+      .filter(Boolean)
+      .join(" · ");
+    const allowedTexts = [
+      ...(isPortrait ? [] : classification.textosExactos ?? []),
+      ...(showBrand && !logoImage && brandDna?.name ? [brandDna.name] : []),
+      ...(showContact && contactText ? [contactText] : []),
+    ];
 
     const guidelines = buildPromptForCategory(classification.categoria, {
       userPrompt: prompt,
@@ -123,7 +134,9 @@ export async function POST(request: Request) {
       brandDna,
     });
 
-    const finalPrompt = await directArt(guidelines);
+    const finalPrompt =
+      (await directArt(guidelines, allowedTexts)) +
+      buildTextLock(allowedTexts, Boolean(referenceImage), Boolean(logoImage));
 
     if (process.env.NODE_ENV !== "production") {
       console.info(`[pautas de plantilla · ${classification.categoria}]\n${guidelines}`);

@@ -7,6 +7,7 @@ import {
   formatBrandDna,
   formatDetails,
   formatExactTexts,
+  REFERENCE_FIDELITY,
 } from "./shared";
 
 export function buildProductPrompt({
@@ -36,7 +37,7 @@ Design requirements:
 - Composition typical of premium product photography (centered or rule-of-thirds framing, consistent with the requested style).
 - Do NOT add any text, caption or words to the image unless listed in "Exact on-image text" above, the brief explicitly describes packaging text/labels as part of the product itself, or the Brand DNA section below explicitly asks for it.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? "- Use the user's reference image as the exact product/packaging to depict — preserve its real shape, colors, labels and proportions faithfully, only changing the scene/background/lighting as requested." : ""}
+${hasReferenceImage ? `- Only the scene, background and lighting change — the product itself comes from the user's reference image.\n${REFERENCE_FIDELITY}` : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
 ${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,

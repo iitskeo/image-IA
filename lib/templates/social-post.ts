@@ -7,6 +7,7 @@ import {
   formatBrandDna,
   formatDetails,
   formatExactTexts,
+  REFERENCE_FIDELITY,
 } from "./shared";
 
 export function buildSocialPostPrompt({
@@ -35,7 +36,7 @@ Design requirements:
 - Modern, on-trend color palette that feels intentional and brand-consistent, not default AI pastel gradients.
 - Composition should feel like it was art-directed for social media (rule-of-thirds, negative space used purposefully), not a centered stock illustration.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? "- Feature the subject/product from the user's reference image faithfully (same shape, colors, graphics) and integrate it naturally into the design." : ""}
+${hasReferenceImage ? `- Feature the subject/product from the user's reference image as the hero of the design.\n${REFERENCE_FIDELITY}` : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
 ${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,

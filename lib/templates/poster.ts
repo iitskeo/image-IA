@@ -7,6 +7,7 @@ import {
   formatBrandDna,
   formatDetails,
   formatExactTexts,
+  REFERENCE_FIDELITY,
 } from "./shared";
 
 export function buildPosterPrompt({
@@ -39,7 +40,7 @@ Design requirements:
 - Coherent color palette and composition matching the tone${estilo ? ` (${estilo})` : ""}.
 - Balanced layout with intentional margins and breathing room, not cluttered or centered by default — use an asymmetric, designed composition.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? "- Feature the subject/product from the user's reference image faithfully (same shape, colors, graphics) as the hero of the poster." : ""}
+${hasReferenceImage ? `- Feature the subject/product from the user's reference image as the hero of the poster.\n${REFERENCE_FIDELITY}` : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
 ${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,
