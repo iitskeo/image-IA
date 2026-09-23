@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { ImageProvider, ReferenceImage } from "./image-provider";
-import { PROVIDER_TIMEOUT_MS } from "./image-provider";
+import { ImageRefusedError, PROVIDER_TIMEOUT_MS } from "./image-provider";
 import type { AspectRatio } from "../aspect-ratio";
 import { withRetry } from "../retry";
 
@@ -61,10 +61,13 @@ export class GeminiNanoBananaProvider implements ImageProvider {
 
     if (!imagePart?.inlineData?.data) {
       const textPart = candidate?.content?.parts?.find((p) => p.text)?.text;
-      throw new Error(
-        textPart
-          ? `El modelo no devolvió una imagen: ${textPart}`
-          : "El modelo no devolvió ninguna imagen. Intenta reformular el pedido."
+      console.error("Nano Banana no devolvió imagen:", {
+        finishReason: candidate?.finishReason,
+        blockReason: response.promptFeedback?.blockReason,
+        text: textPart?.slice(0, 300),
+      });
+      throw new ImageRefusedError(
+        "El modelo no pudo generar esta imagen con ese pedido o esa imagen de referencia. Prueba reformularlo o usar otra referencia."
       );
     }
 

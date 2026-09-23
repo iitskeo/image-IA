@@ -10,6 +10,8 @@ export interface Dictionary {
   greetingSubtitle: string;
   placeholder: string;
   attach: string;
+  attachHint: string;
+  dropReference: string;
   removeImage: string;
   generate: string;
   generating: string;
@@ -47,6 +49,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'Ej: "Quiero un poster para un evento en el edificio AC el 15 de septiembre, charla de desarrollo personal"',
     attach: "Adjuntar imagen de referencia",
+    attachHint: "También puedes pegarla (Ctrl+V) o arrastrarla al chat",
+    dropReference: "Suelta la imagen para usarla como referencia",
     removeImage: "Quitar imagen",
     generate: "Generar imagen",
     generating: "Generando…",
@@ -94,6 +98,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'E.g. "I want a poster for an event at the AC building on September 15th, a talk on personal development"',
     attach: "Attach reference image",
+    attachHint: "You can also paste it (Ctrl+V) or drag it into the chat",
+    dropReference: "Drop the image to use it as a reference",
     removeImage: "Remove image",
     generate: "Generate image",
     generating: "Generating…",
@@ -141,6 +147,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'Ex: "Quero um pôster para um evento no prédio AC no dia 15 de setembro, palestra sobre desenvolvimento pessoal"',
     attach: "Anexar imagem de referência",
+    attachHint: "Você também pode colá-la (Ctrl+V) ou arrastá-la para o chat",
+    dropReference: "Solte a imagem para usá-la como referência",
     removeImage: "Remover imagem",
     generate: "Gerar imagem",
     generating: "Gerando…",
@@ -188,6 +196,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'Ex : "Je veux une affiche pour un événement au bâtiment AC le 15 septembre, une conférence sur le développement personnel"',
     attach: "Joindre une image de référence",
+    attachHint: "Tu peux aussi la coller (Ctrl+V) ou la glisser dans le chat",
+    dropReference: "Dépose l'image pour l'utiliser comme référence",
     removeImage: "Retirer l'image",
     generate: "Générer l'image",
     generating: "Génération…",
@@ -235,6 +245,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'Z. B.: "Ich möchte ein Plakat für eine Veranstaltung im AC-Gebäude am 15. September, ein Vortrag über persönliche Entwicklung"',
     attach: "Referenzbild anhängen",
+    attachHint: "Du kannst es auch einfügen (Strg+V) oder in den Chat ziehen",
+    dropReference: "Bild ablegen, um es als Referenz zu verwenden",
     removeImage: "Bild entfernen",
     generate: "Bild erstellen",
     generating: "Wird erstellt…",
@@ -282,6 +294,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'Es: "Voglio un poster per un evento nell\'edificio AC il 15 settembre, una conferenza sullo sviluppo personale"',
     attach: "Allega immagine di riferimento",
+    attachHint: "Puoi anche incollarla (Ctrl+V) o trascinarla nella chat",
+    dropReference: "Rilascia l'immagine per usarla come riferimento",
     removeImage: "Rimuovi immagine",
     generate: "Genera immagine",
     generating: "Generazione…",
@@ -329,6 +343,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     placeholder:
       'Напр.: "Хочу постер для мероприятия в здании AC 15 сентября, лекция по личностному развитию"',
     attach: "Прикрепить референс-изображение",
+    attachHint: "Можно также вставить (Ctrl+V) или перетащить изображение в чат",
+    dropReference: "Отпустите изображение, чтобы использовать его как референс",
     removeImage: "Удалить изображение",
     generate: "Создать изображение",
     generating: "Создаём…",
@@ -375,6 +391,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     greetingSubtitle: "今天要创建什么图片？",
     placeholder: '例如："我想要一张9月15日AC大楼活动的海报，主题是个人发展讲座"',
     attach: "附加参考图片",
+    attachHint: "也可以粘贴（Ctrl+V）或拖入聊天",
+    dropReference: "松开即可将图片用作参考",
     removeImage: "移除图片",
     generate: "生成图片",
     generating: "生成中…",

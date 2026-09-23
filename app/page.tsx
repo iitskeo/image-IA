@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent, FormEvent } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { BrandDnaDialog } from "@/components/BrandDnaDialog";
@@ -32,7 +32,7 @@ import {
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/aspect-ratio";
 import { BRAND_DNA_STORAGE_KEY, MAX_BRAND_DNA_PROFILES, type BrandDna } from "@/lib/brand-dna";
-import { normalizeImageToAspectRatio } from "@/lib/image-client";
+import { normalizeImageToAspectRatio, prepareReferenceImage } from "@/lib/image-client";
 
 const LOCALE_STORAGE_KEY = "ia-images-locale";
 const ADD_BRAND_DNA_OPTION = "__add_brand_dna__";
@@ -265,10 +265,70 @@ export default function Home() {
     setSettingsOpen(false);
   }
 
+  // Punto único para adjuntar la referencia: botón, pegar (Ctrl+V) o arrastrar.
+  const attachReferenceFile = useCallback(async (file: File) => {
+    const prepared = await prepareReferenceImage(file);
+    setReferenceFile(prepared);
+    setReferencePreview(URL.createObjectURL(prepared));
+  }, []);
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setReferenceFile(file);
-    setReferencePreview(file ? URL.createObjectURL(file) : null);
+    const file = e.target.files?.[0];
+    if (file) void attachReferenceFile(file);
+  }
+
+  const anyDialogOpen = brandDnaDialogOpen || settingsOpen;
+
+  // Pegar una imagen del portapapeles en cualquier parte del chat la adjunta
+  // como referencia. El texto pegado sigue funcionando normal, y con un
+  // diálogo abierto no se intercepta nada.
+  useEffect(() => {
+    if (anyDialogOpen) return;
+    function handlePaste(e: ClipboardEvent) {
+      const image = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/"));
+      if (!image) return;
+      e.preventDefault();
+      void attachReferenceFile(image);
+    }
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [anyDialogOpen, attachReferenceFile]);
+
+  // Arrastrar una imagen sobre la app la adjunta como referencia. El contador
+  // evita el parpadeo del overlay al pasar por encima de elementos hijos.
+  const [draggingFile, setDraggingFile] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  function isFileDrag(e: DragEvent) {
+    return !anyDialogOpen && Array.from(e.dataTransfer.types).includes("Files");
+  }
+
+  function handleAppDragEnter(e: DragEvent<HTMLDivElement>) {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setDraggingFile(true);
+  }
+
+  function handleAppDragOver(e: DragEvent<HTMLDivElement>) {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); // necesario para que el navegador permita soltar aquí
+  }
+
+  function handleAppDragLeave(e: DragEvent<HTMLDivElement>) {
+    if (!isFileDrag(e)) return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDraggingFile(false);
+  }
+
+  function handleAppDrop(e: DragEvent<HTMLDivElement>) {
+    if (!isFileDrag(e)) return;
+    // Evita que el navegador abra la imagen y saque al usuario de la app.
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setDraggingFile(false);
+    const image = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
+    if (image) void attachReferenceFile(image);
   }
 
   function clearReferenceImage() {
@@ -517,7 +577,10 @@ export default function Home() {
       </div>
 
       <div className="flex items-center justify-between px-1 pb-0.5">
-        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/50 transition-colors hover:bg-surface-2 hover:text-foreground/80">
+        <label
+          title={t.attachHint}
+          className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/50 transition-colors hover:bg-surface-2 hover:text-foreground/80"
+        >
           <PaperclipIcon className="h-4 w-4" />
           {t.attach}
           <input
@@ -556,7 +619,21 @@ export default function Home() {
   );
 
   return (
-    <div className="h-dvh w-full bg-background md:p-3">
+    <div
+      className="h-dvh w-full bg-background md:p-3"
+      onDragEnter={handleAppDragEnter}
+      onDragOver={handleAppDragOver}
+      onDragLeave={handleAppDragLeave}
+      onDrop={handleAppDrop}
+    >
+      {draggingFile && (
+        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[var(--accent-from)] bg-surface/90 px-10 py-8 text-center">
+            <PaperclipIcon className="h-6 w-6 text-[var(--accent-from)]" />
+            <p className="text-sm font-medium text-foreground">{t.dropReference}</p>
+          </div>
+        </div>
+      )}
       <div className="flex h-full w-full overflow-hidden md:rounded-2xl md:border md:border-[color-mix(in_srgb,var(--accent-from)_40%,var(--color-line))] md:shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent-from)_10%,transparent),0_24px_64px_-28px_color-mix(in_srgb,var(--accent-to)_45%,transparent)]">
         <Sidebar
           history={history}

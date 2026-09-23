@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { classifyPrompt, MAX_CLARIFICATION_ROUNDS, CATEGORIES, type Category } from "@/lib/classifier";
 import { buildPromptForCategory } from "@/lib/templates";
-import type { ImageProvider } from "@/lib/providers/image-provider";
+import { ImageRefusedError, type ImageProvider } from "@/lib/providers/image-provider";
 import { GeminiNanoBananaProvider } from "@/lib/providers/gemini-nano-banana";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { isAspectRatio } from "@/lib/aspect-ratio";
@@ -118,6 +118,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error instanceof ImageRefusedError) {
+      return NextResponse.json({ error: error.message }, { status: 422 });
     }
 
     console.error("Error generando imagen:", error);

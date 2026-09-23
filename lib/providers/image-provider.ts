@@ -10,6 +10,10 @@ export interface ReferenceImage {
 // el proveedor externo no responde.
 export const PROVIDER_TIMEOUT_MS = 45_000;
 
+// El modelo respondió pero se negó a generar (políticas de contenido, foto de
+// una persona real, etc.): reintentar igual no sirve, hay que cambiar el pedido.
+export class ImageRefusedError extends Error {}
+
 export interface ImageProvider {
   generate(
     prompt: string,

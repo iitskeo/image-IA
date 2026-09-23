@@ -64,6 +64,37 @@ export async function extractDominantColors(files: File[], count = 5): Promise<s
     });
 }
 
+const REFERENCE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const REFERENCE_MAX_BYTES = 4.5 * 1024 * 1024; // margen bajo el límite de 5MB del servidor
+const REFERENCE_MAX_DIMENSION = 2048;
+
+// Capturas pegadas (PNG enormes) o fotos de celular suelen pasar el límite
+// del servidor: en ese caso se reescala y recomprime a JPEG en el navegador.
+// Si el navegador no puede decodificarla (ej. HEIC), se deja tal cual y el
+// servidor responde con un mensaje claro.
+export async function prepareReferenceImage(file: File): Promise<File> {
+  if (REFERENCE_TYPES.includes(file.type) && file.size <= REFERENCE_MAX_BYTES) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, REFERENCE_MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+    const { canvas, ctx } = createCanvas(width, height);
+    ctx.fillStyle = "#ffffff"; // fondo para PNG con transparencia al pasar a JPEG
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) return file;
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "referencia";
+    return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
