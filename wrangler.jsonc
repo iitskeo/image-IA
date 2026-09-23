@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ia-images",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // Las API keys (GOOGLE_API_KEY, HF_TOKEN) NO van aquí: se cargan como
+  // secrets con `npx wrangler secret put <NOMBRE>`.
+  "vars": {
+    "IMAGE_PROVIDER": "huggingface"
+  }
+}
