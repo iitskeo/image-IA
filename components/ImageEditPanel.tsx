@@ -1,30 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { Dictionary } from "@/lib/i18n";
 import type { ChatTurn } from "@/lib/history";
-import { LoaderIcon, SendIcon, XIcon } from "./icons";
+import { ASPECT_RATIOS, isAspectRatio, type AspectRatio } from "@/lib/aspect-ratio";
+import { SendIcon, XIcon } from "./icons";
 
 interface ImageEditPanelProps {
   open: boolean;
   onClose: () => void;
-  // El turno raíz primero, seguido de cada edición en orden cronológico.
-  turns: ChatTurn[];
-  generating: boolean;
-  error: string | null;
-  onSubmit: (instruction: string) => void;
+  // El turno específico que se está editando (para la miniatura y la
+  // proporción actual) — la referencia para el pedido es SIEMPRE esta
+  // imagen, sea el turno original o una edición anterior.
+  turn: ChatTurn | null;
+  onSubmit: (instruction: string, aspectRatio: AspectRatio) => void;
   t: Dictionary;
 }
 
-export function ImageEditPanel({ open, onClose, turns, generating, error, onSubmit, t }: ImageEditPanelProps) {
+export function ImageEditPanel({ open, onClose, turn, onSubmit, t }: ImageEditPanelProps) {
   const [instruction, setInstruction] = useState("");
-  const scrollBottomRef = useRef<HTMLDivElement>(null);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
 
   useEffect(() => {
+    if (!open) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!open) setInstruction("");
-  }, [open]);
+    setInstruction("");
+    setAspectRatio(isAspectRatio(turn?.aspectRatio) ? turn.aspectRatio : "1:1");
+  }, [open, turn]);
 
   useEffect(() => {
     if (!open) return;
@@ -35,18 +38,13 @@ export function ImageEditPanel({ open, onClose, turns, generating, error, onSubm
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
-  useEffect(() => {
-    scrollBottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [turns.length, generating]);
-
-  if (!open) return null;
+  if (!open || !turn) return null;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const value = instruction.trim();
-    if (!value || generating) return;
-    onSubmit(value);
-    setInstruction("");
+    if (!value) return;
+    onSubmit(value, aspectRatio);
   }
 
   return (
@@ -55,7 +53,7 @@ export function ImageEditPanel({ open, onClose, turns, generating, error, onSubm
         role="dialog"
         aria-modal="true"
         aria-label={t.editImage}
-        className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl border border-line bg-surface shadow-2xl"
+        className="w-full max-w-lg rounded-2xl border border-line bg-surface shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <h2 className="text-sm font-semibold text-foreground">{t.editImage}</h2>
@@ -69,53 +67,48 @@ export function ImageEditPanel({ open, onClose, turns, generating, error, onSubm
           </button>
         </div>
 
-        <div className="custom-scroll flex-1 overflow-y-auto px-4 py-4">
-          <div className="flex flex-col gap-4">
-            {turns.map((turn, i) => (
-              <div key={turn.id} className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-foreground/50">
-                  {i === 0 ? t.editOriginal : turn.prompt}
-                </span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={turn.image}
-                  alt={turn.prompt}
-                  className="w-full rounded-xl border border-line object-cover"
-                />
-              </div>
-            ))}
-
-            {generating && (
-              <div className="flex aspect-[4/3] w-full animate-pulse items-center justify-center rounded-xl border border-line bg-surface-2">
-                <LoaderIcon className="h-6 w-6 animate-spin text-foreground/25" />
-              </div>
-            )}
-            <div ref={scrollBottomRef} />
-          </div>
-        </div>
-
-        <div className="border-t border-line p-3">
-          {error && <p className="mb-2 rounded-lg bg-red-950/50 px-3 py-2 text-xs text-red-300">{error}</p>}
-          <form onSubmit={handleSubmit} className="flex items-center gap-2">
-            <input
-              type="text"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-4">
+          <div className="flex gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={turn.image}
+              alt={turn.prompt}
+              className="h-24 w-24 shrink-0 rounded-xl border border-line object-cover"
+            />
+            <textarea
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
               placeholder={t.editPlaceholder}
+              rows={4}
               maxLength={400}
-              disabled={generating}
-              className="flex-1 rounded-lg border border-line bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-foreground/35 focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)] disabled:opacity-50"
+              className="w-full flex-1 resize-none rounded-xl border border-line bg-background p-2.5 text-sm text-foreground outline-none placeholder:text-foreground/35 focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)]"
             />
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <select
+              value={aspectRatio}
+              onChange={(e) => setAspectRatio(e.target.value as AspectRatio)}
+              aria-label={t.aspectRatioLabel}
+              className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-xs font-medium text-foreground/70 outline-none focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)]"
+            >
+              {ASPECT_RATIOS.map((ratio) => (
+                <option key={ratio} value={ratio}>
+                  {t.aspectRatios[ratio] ?? ratio}
+                </option>
+              ))}
+            </select>
+
             <button
               type="submit"
-              disabled={generating || !instruction.trim()}
-              aria-label={t.editSend}
-              className="btn-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!instruction.trim()}
+              className="btn-primary flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SendIcon className="h-4 w-4" />
+              <SendIcon className="h-3.5 w-3.5" />
+              {t.editSend}
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
