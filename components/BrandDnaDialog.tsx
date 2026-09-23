@@ -10,6 +10,7 @@ import {
 } from "@/lib/brand-dna";
 import { extractDominantColors } from "@/lib/image-client";
 import { ColorPickerPopover } from "./ColorPickerPopover";
+import { FontSelect } from "./FontSelect";
 import {
   ChevronLeftIcon,
   DnaIcon,
@@ -66,7 +67,7 @@ export function BrandDnaDialog({
   const [tone, setTone] = useState("");
   const [audience, setAudience] = useState("");
   const [styleNotes, setStyleNotes] = useState("");
-  const [typography, setTypography] = useState("");
+  const [typography, setTypography] = useState<string | undefined>(undefined);
   const [logoImage, setLogoImage] = useState<string | undefined>(undefined);
   const [contactPhone, setContactPhone] = useState("");
   const [contactWebsite, setContactWebsite] = useState("");
@@ -125,7 +126,7 @@ export function BrandDnaDialog({
     setTone(profile.tone ?? "");
     setAudience(profile.audience ?? "");
     setStyleNotes(profile.styleNotes ?? "");
-    setTypography(profile.typography ?? "");
+    setTypography(profile.typography);
     setLogoImage(profile.logoImage);
     setContactPhone(profile.contactPhone ?? "");
     setContactWebsite(profile.contactWebsite ?? "");
@@ -241,8 +242,7 @@ export function BrandDnaDialog({
     // Al editar, los campos ya son visibles y editables a mano — no tiene
     // sentido volver a inferirlos y pisar una corrección manual del usuario.
     // En modo manual solo se infiere la tipografía, si subió imágenes y no la escribió.
-    const shouldInfer =
-      !isEditing && (mode === "automatico" || (images.length > 0 && !typography.trim()));
+    const shouldInfer = !isEditing && (mode === "automatico" || (images.length > 0 && !typography));
     if (shouldInfer) {
       try {
         const formData = new FormData();
@@ -275,7 +275,7 @@ export function BrandDnaDialog({
       tone: tone.trim() || undefined,
       audience: showExtraFields ? audience.trim() || undefined : inferredAudience,
       styleNotes: showExtraFields ? styleNotes.trim() || undefined : inferredStyleNotes,
-      typography: typography.trim() || inferredTypography,
+      typography: typography ?? inferredTypography,
       logoImage: showExtraFields ? logoImage : undefined,
       contactPhone: showExtraFields ? contactPhone.trim() || undefined : undefined,
       contactWebsite: showExtraFields ? contactWebsite.trim() || undefined : undefined,
@@ -607,13 +607,12 @@ export function BrandDnaDialog({
 
                   <label className="flex flex-col gap-1.5 text-sm">
                     <span className="font-medium text-foreground/80">{t.typographyLabel}</span>
-                    <input
-                      type="text"
+                    <FontSelect
                       value={typography}
-                      onChange={(e) => setTypography(e.target.value)}
-                      placeholder={t.typographyPlaceholder}
-                      maxLength={150}
-                      className={fieldClass}
+                      onChange={setTypography}
+                      previewText={name}
+                      autoLabel={t.typographyAuto}
+                      ariaLabel={t.typographyLabel}
                     />
                     <span className="text-xs text-foreground/40">{t.typographyHelp}</span>
                   </label>

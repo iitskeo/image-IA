@@ -1,5 +1,6 @@
 import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { withRetry } from "./retry";
+import { BRAND_FONTS, BRAND_FONT_IDS } from "./brand-fonts";
 
 // Modo automático del ADN de marca: en vez de preguntar más cosas al
 // usuario, usamos la misma IA para inferir público objetivo y notas de
@@ -29,7 +30,9 @@ export interface BrandDnaInferenceResult {
 const SYSTEM_INSTRUCTION = `Eres un asistente de branding. A partir de información breve sobre una marca (a qué se dedica, tono, colores) y, si se incluyen, imágenes reales de la marca (capturas de redes, logo, fotos de producto), infiere con criterio profesional:
 - audience: el público objetivo más probable (una frase breve).
 - styleNotes: qué buscar o evitar visualmente en el diseño para esta marca (1-2 frases breves).
-- typography: SOLO si en las imágenes se ve tipografía de la marca (logo, titulares de sus posts): describe su estilo tipográfico y la fuente conocida más parecida, en una frase corta (ej. "Sans-serif geométrica en negrita, estilo Montserrat Bold"). Si no se ve tipografía de marca en las imágenes, cadena vacía.
+- typography: SOLO si en las imágenes se ve tipografía real de la marca (logo, titulares de sus posts), elige de esta lista el id de la que más se le parece:
+${BRAND_FONTS.map((f) => `  - ${f.id}: ${f.name} (${f.category})`).join("\n")}
+  Si no se ve tipografía de marca en las imágenes, o ninguna se parece, cadena vacía.
 
 Si se incluyen imágenes, obsérvalas con atención real (estilo fotográfico, tipografía, composición, paleta, nivel de formalidad, calidad de producción) y deja que eso informe tu respuesta — no te limites a los colores dominantes, esa parte ya se calculó aparte. Si la información es insuficiente para inferir algo con confianza razonable, deja ese campo como cadena vacía en vez de inventar algo genérico sin sentido.`;
 
@@ -43,7 +46,8 @@ const RESPONSE_SCHEMA = {
     },
     typography: {
       type: Type.STRING,
-      description: "Estilo tipográfico visto en las imágenes de la marca + fuente conocida más parecida, o vacío.",
+      enum: [...BRAND_FONT_IDS, ""],
+      description: "Id de la tipografía de la lista más parecida a la vista en las imágenes de marca, o vacío.",
     },
   },
   required: ["audience", "styleNotes", "typography"],
@@ -105,7 +109,7 @@ export async function inferBrandDnaFields(
     return {
       audience: parsed.audience?.trim() || undefined,
       styleNotes: parsed.styleNotes?.trim() || undefined,
-      typography: parsed.typography?.trim() || undefined,
+      typography: (BRAND_FONT_IDS as string[]).includes(parsed.typography ?? "") ? parsed.typography : undefined,
     };
   } catch {
     // Blindaje: si la inferencia falla, simplemente no se completan esos

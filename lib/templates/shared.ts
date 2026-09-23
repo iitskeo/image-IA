@@ -1,5 +1,6 @@
 import type { BrandDna } from "../brand-dna";
 import type { AspectRatio } from "../aspect-ratio";
+import { findBrandFont } from "../brand-fonts";
 
 const ASPECT_RATIO_DESCRIPTIONS: Record<AspectRatio, string> = {
   "1:1": "1:1 square (e.g. Instagram feed post)",
@@ -87,8 +88,9 @@ export function formatBrandDna(
   if (brandDna.tone) lines.push(`- Brand tone: "${brandDna.tone}"`);
   if (brandDna.audience) lines.push(`- Target audience: "${brandDna.audience}"`);
   if (brandDna.styleNotes) lines.push(`- Additional style notes: "${brandDna.styleNotes}"`);
-  if (brandDna.typography) {
-    lines.push(`- Brand typography: "${brandDna.typography}" — set the headline and text in this typographic style.`);
+  const font = findBrandFont(brandDna.typography);
+  if (font) {
+    lines.push(`- Brand typography: use a typeface in the style of "${font.name}" for the headline and text.`);
   }
   if (includeBrand) {
     lines.push(

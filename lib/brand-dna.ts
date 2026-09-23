@@ -1,3 +1,5 @@
+import { BRAND_FONT_IDS } from "./brand-fonts";
+
 export type BrandDnaMode = "automatico" | "manual";
 
 export interface BrandDna {
@@ -10,7 +12,7 @@ export interface BrandDna {
   tone?: string;
   audience?: string;
   styleNotes?: string;
-  typography?: string; // estilo tipográfico de la marca (detectado de sus imágenes o escrito a mano)
+  typography?: string; // id de lib/brand-fonts.ts (BRAND_FONTS), elegido o detectado de sus imágenes
   logoImage?: string; // data URL, ya redimensionado/comprimido en el cliente
   contactPhone?: string;
   contactWebsite?: string;
@@ -59,6 +61,10 @@ function sanitizeText(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
+function sanitizeTypography(value: unknown): string | undefined {
+  return typeof value === "string" && (BRAND_FONT_IDS as string[]).includes(value) ? value : undefined;
+}
+
 function sanitizeLogoImage(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   if (value.length > MAX_LOGO_DATA_URL_LENGTH) return undefined;
@@ -87,7 +93,7 @@ export function sanitizeBrandDna(raw: unknown): BrandDna | undefined {
     tone: sanitizeText(obj.tone),
     audience: sanitizeText(obj.audience),
     styleNotes: sanitizeText(obj.styleNotes),
-    typography: sanitizeText(obj.typography),
+    typography: sanitizeTypography(obj.typography),
     logoImage: sanitizeLogoImage(obj.logoImage),
     contactPhone: sanitizeText(obj.contactPhone),
     contactWebsite: sanitizeText(obj.contactWebsite),

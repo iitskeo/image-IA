@@ -32,6 +32,20 @@ function normalizeForCompare(text: string): string {
   return text.toLocaleLowerCase("es").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ");
 }
 
+// Evita que el mismo texto (ej. el nombre de la marca) termine dos veces en
+// la lista final — el modelo lo dibujaría literalmente dos veces.
+function dedupeAgainst(existing: string[], candidates: string[]): string[] {
+  const seen = existing.map(normalizeForCompare);
+  const result: string[] = [];
+  for (const candidate of candidates) {
+    const norm = normalizeForCompare(candidate);
+    if (seen.some((s) => s.includes(norm) || norm.includes(s))) continue;
+    seen.push(norm);
+    result.push(candidate);
+  }
+  return result;
+}
+
 // Red de seguridad en código: un póster de evento sin fecha o lugar no sirve,
 // así que si el clasificador omitió alguno de sus datos clave, se agrega.
 // Y una promoción nunca sale sin ningún texto.
@@ -158,16 +172,21 @@ export async function POST(request: Request) {
       .join(" · ");
     const socialHandle = showBrand ? socialHandleFromLink(brandDna?.socialLink) : undefined;
     const isPromo = classification.categoria === "poster_evento" || classification.categoria === "post_redes";
-    const textPlan: TextPlan = {
-      main: isPortrait ? [] : ensureKeyTexts(classification, isPromo),
-      // Beneficios solo en piezas promocionales — nunca en fotos de catálogo.
-      bullets: isPromo ? classification.beneficios ?? [] : [],
-      footer: [
+
+    // El clasificador a veces ya teje el nombre de la marca dentro del
+    // titular (ej. "que se note que es de nuestra academia") — sin este
+    // filtro, el pie lo volvía a agregar y el modelo lo dibujaba dos veces.
+    const main = isPortrait ? [] : ensureKeyTexts(classification, isPromo);
+    const bullets = dedupeAgainst(main, isPromo ? classification.beneficios ?? [] : []);
+    const footer = dedupeAgainst(
+      [...main, ...bullets],
+      [
         ...(showBrand && !logoImage && brandDna?.name ? [brandDna.name] : []),
         ...(socialHandle ? [socialHandle] : []),
         ...(showContact && contactText ? [contactText] : []),
-      ],
-    };
+      ]
+    );
+    const textPlan: TextPlan = { main, bullets, footer };
     const allowedTexts = allTexts(textPlan);
 
     const guidelines = buildPromptForCategory(classification.categoria, {
