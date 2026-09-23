@@ -3,8 +3,6 @@ import { classifyPrompt, MAX_CLARIFICATION_ROUNDS, CATEGORIES, type Category } f
 import { buildPromptForCategory } from "@/lib/templates";
 import type { ImageProvider } from "@/lib/providers/image-provider";
 import { GeminiNanoBananaProvider } from "@/lib/providers/gemini-nano-banana";
-import { PollinationsProvider } from "@/lib/providers/pollinations";
-import { HuggingFaceProvider } from "@/lib/providers/huggingface";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { isAspectRatio } from "@/lib/aspect-ratio";
 import { sanitizeBrandDna } from "@/lib/brand-dna";
@@ -16,21 +14,7 @@ import {
 
 export const runtime = "nodejs";
 
-// IMAGE_PROVIDER: "pollinations" (default, gratis) | "huggingface" (gratis,
-// requiere HF_TOKEN) | "gemini" (Nano Banana, requiere facturación activa).
-// El resto de la app no necesita ningún otro cambio al cambiar de proveedor.
-function createProvider(): ImageProvider {
-  switch (process.env.IMAGE_PROVIDER) {
-    case "gemini":
-      return new GeminiNanoBananaProvider();
-    case "huggingface":
-      return new HuggingFaceProvider();
-    default:
-      return new PollinationsProvider();
-  }
-}
-
-const provider = createProvider();
+const provider: ImageProvider = new GeminiNanoBananaProvider();
 
 export async function POST(request: Request) {
   const clientKey = getClientKey(request);

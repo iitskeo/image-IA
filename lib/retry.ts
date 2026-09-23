@@ -3,14 +3,6 @@
 // cliente nunca vea un error por esto, solo siga viendo "generando…" un poco
 // más mientras reintentamos en silencio.
 
-export class HttpStatusError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
-
 export interface RetryOptions {
   maxAttempts?: number;
   baseDelayMs?: number;
@@ -26,12 +18,6 @@ function getErrorStatus(error: unknown): number | undefined {
   // @google/genai ApiError: { status: number }
   if ("status" in error && typeof (error as { status?: unknown }).status === "number") {
     return (error as { status: number }).status;
-  }
-
-  // @huggingface/inference InferenceClientHttpRequestError: { httpResponse: { status } }
-  const httpResponse = (error as { httpResponse?: { status?: unknown } }).httpResponse;
-  if (httpResponse && typeof httpResponse.status === "number") {
-    return httpResponse.status;
   }
 
   return undefined;

@@ -73,9 +73,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-// Algunos proveedores gratuitos ignoran el tamaño pedido y siempre devuelven
-// un cuadrado; esto recorta al centro para que la proporción elegida por el
-// usuario se cumpla siempre. Si ya tiene la proporción correcta, no la toca.
+// Red de seguridad: si el modelo devolviera otra proporción, recorta al centro
+// para que la elegida por el usuario se cumpla siempre. Si ya coincide, no la toca.
 export async function normalizeImageToAspectRatio(
   dataUrl: string,
   aspectRatio: AspectRatio
@@ -86,7 +85,9 @@ export async function normalizeImageToAspectRatio(
     const img = await loadImage(dataUrl);
     const sourceWidth = img.naturalWidth;
     const sourceHeight = img.naturalHeight;
-    if (Math.abs(sourceWidth / sourceHeight - targetRatio) < 0.01) return dataUrl;
+    // Nano Banana devuelve tamaños nativos cercanos pero no exactos (ej. 16:9 →
+    // 1344×768 = 1.75): con este margen se respetan sin recortar ni recomprimir.
+    if (Math.abs(sourceWidth / sourceHeight - targetRatio) / targetRatio < 0.05) return dataUrl;
 
     let cropWidth = sourceWidth;
     let cropHeight = sourceHeight;

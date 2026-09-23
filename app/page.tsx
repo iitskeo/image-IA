@@ -35,6 +35,7 @@ import { BRAND_DNA_STORAGE_KEY, MAX_BRAND_DNA_PROFILES, type BrandDna } from "@/
 import { normalizeImageToAspectRatio } from "@/lib/image-client";
 
 const LOCALE_STORAGE_KEY = "ia-images-locale";
+const ADD_BRAND_DNA_OPTION = "__add_brand_dna__";
 
 interface GenerationChoices {
   categoryHint: Category | "";
@@ -72,6 +73,10 @@ export default function Home() {
 
   const [brandDnaProfiles, setBrandDnaProfiles] = useState<BrandDna[]>([]);
   const [brandDnaDialogOpen, setBrandDnaDialogOpen] = useState(false);
+  const [brandDnaDialogView, setBrandDnaDialogView] = useState<"list" | "create">("list");
+  // Cambiar la key remonta el diálogo, así cada apertura arranca limpia en la
+  // vista pedida (lista desde el menú, crear desde el selector del composer).
+  const [brandDnaDialogKey, setBrandDnaDialogKey] = useState(0);
   const [selectedBrandDnaId, setSelectedBrandDnaId] = useState("");
 
   // Referencias "en vivo" para que el código async siempre pueda comprobar
@@ -155,6 +160,13 @@ export default function Home() {
     });
   }
 
+  function openBrandDnaDialog(view: "list" | "create") {
+    setBrandDnaDialogView(view);
+    setBrandDnaDialogKey((k) => k + 1);
+    setBrandDnaDialogOpen(true);
+    setMobileSidebarOpen(false);
+  }
+
   function handleSaveBrandDna(dna: BrandDna) {
     persistBrandDna((prev) => {
       const existingIndex = prev.findIndex((d) => d.id === dna.id);
@@ -164,6 +176,9 @@ export default function Home() {
       return next;
     });
     setSelectedBrandDnaId(dna.id);
+    // Si se creó desde el selector del composer, vuelve directo al prompt con
+    // el ADN nuevo ya elegido.
+    if (brandDnaDialogView === "create") setBrandDnaDialogOpen(false);
   }
 
   function handleDeleteBrandDna(id: string) {
@@ -477,21 +492,28 @@ export default function Home() {
           ))}
         </select>
 
-        {brandDnaProfiles.length > 0 && (
-          <select
-            value={selectedBrandDnaId}
-            onChange={(e) => setSelectedBrandDnaId(e.target.value)}
-            aria-label={brandDnaT.selectorLabel}
-            className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-xs font-medium text-foreground/70 outline-none focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)]"
-          >
-            <option value="">{brandDnaT.selectorNone}</option>
-            {brandDnaProfiles.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          value={selectedBrandDnaId}
+          onChange={(e) => {
+            // La opción "Agregar" no es una selección: abre el formulario y
+            // el select vuelve solo a su valor anterior (es controlado).
+            if (e.target.value === ADD_BRAND_DNA_OPTION) {
+              openBrandDnaDialog("create");
+              return;
+            }
+            setSelectedBrandDnaId(e.target.value);
+          }}
+          aria-label={brandDnaT.selectorLabel}
+          className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-xs font-medium text-foreground/70 outline-none focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)]"
+        >
+          <option value="">{brandDnaT.selectorNone}</option>
+          {brandDnaProfiles.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+          <option value={ADD_BRAND_DNA_OPTION}>{brandDnaT.selectorAdd}</option>
+        </select>
       </div>
 
       <div className="flex items-center justify-between px-1 pb-0.5">
@@ -550,10 +572,7 @@ export default function Home() {
             setSettingsOpen(true);
             setMobileSidebarOpen(false);
           }}
-          onOpenBrandDna={() => {
-            setBrandDnaDialogOpen(true);
-            setMobileSidebarOpen(false);
-          }}
+          onOpenBrandDna={() => openBrandDnaDialog("list")}
           brandDnaLabel={brandDnaT.title}
         />
 
@@ -674,7 +693,9 @@ export default function Home() {
       />
 
       <BrandDnaDialog
+        key={brandDnaDialogKey}
         open={brandDnaDialogOpen}
+        initialView={brandDnaDialogView}
         onClose={() => setBrandDnaDialogOpen(false)}
         profiles={brandDnaProfiles}
         onSave={handleSaveBrandDna}

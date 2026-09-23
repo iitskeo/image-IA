@@ -6,7 +6,7 @@ import { withRetry } from "./retry";
 // estilo a partir de lo poco que ya sabemos (qué hace la marca, tono,
 // colores) — y, si subió imágenes, las analiza de verdad (modelo
 // multimodal) en vez de usarlas solo para extraer colores por pixeles.
-const MODEL_NAME = process.env.GEMINI_TEXT_MODEL || "gemini-3.5-flash";
+const MODEL_NAME = process.env.GEMINI_TEXT_MODEL || "gemini-3.5-flash-lite";
 
 export interface BrandDnaInferenceImage {
   base64: string;

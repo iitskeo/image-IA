@@ -4,19 +4,14 @@ import { PROVIDER_TIMEOUT_MS } from "./image-provider";
 import type { AspectRatio } from "../aspect-ratio";
 import { withRetry } from "../retry";
 
-// "Nano Banana 2 Lite" es la versión ligera/gratuita más reciente del
-// modelo de imagen de Gemini. El id del modelo puede cambiar con el tiempo;
-// se puede sobreescribir con la variable de entorno GEMINI_IMAGE_MODEL sin
-// tocar código.
-const MODEL_NAME = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-lite-image";
+// Nano Banana 2 (~$0.067 por imagen 1K). Se cambia con GEMINI_IMAGE_MODEL
+// sin tocar código: "gemini-3.1-flash-lite-image" (Lite, ~$0.034) o
+// "gemini-3-pro-image" (Pro, ~$0.134).
+const MODEL_NAME = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image";
 
 function getClient(): GoogleGenAI {
   const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "Falta la variable de entorno GOOGLE_API_KEY. Consigue una key gratuita en https://aistudio.google.com y agrégala a tu .env.local."
-    );
-  }
+  if (!apiKey) throw new Error("Falta la variable de entorno GOOGLE_API_KEY.");
   return new GoogleGenAI({ apiKey });
 }
 

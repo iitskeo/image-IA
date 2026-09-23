@@ -11,9 +11,10 @@
   "observability": {
     "enabled": true
   },
-  // Las API keys (GOOGLE_API_KEY, HF_TOKEN) NO van aquí: se cargan como
-  // secrets con `npx wrangler secret put <NOMBRE>`.
+  // GOOGLE_API_KEY NO va aquí: es un secret del Worker (Settings → Variables
+  // and Secrets). Cambiar un modelo = editar esta línea y hacer push.
   "vars": {
-    "IMAGE_PROVIDER": "huggingface"
+    "GEMINI_IMAGE_MODEL": "gemini-3.1-flash-image",
+    "GEMINI_TEXT_MODEL": "gemini-3.5-flash-lite"
   }
 }

@@ -20,16 +20,17 @@ import {
   XIcon,
 } from "./icons";
 
+type View = "list" | "create" | "edit";
+
 interface BrandDnaDialogProps {
   open: boolean;
+  initialView?: Extract<View, "list" | "create">;
   onClose: () => void;
   profiles: BrandDna[];
   onSave: (dna: BrandDna) => void;
   onDelete: (id: string) => void;
   t: BrandDnaDictionary;
 }
-
-type View = "list" | "create" | "edit";
 
 interface UploadedImage {
   file: File;
@@ -41,8 +42,16 @@ const fieldClass =
 
 const MAX_LOGO_DIMENSION = 480;
 
-export function BrandDnaDialog({ open, onClose, profiles, onSave, onDelete, t }: BrandDnaDialogProps) {
-  const [view, setView] = useState<View>("list");
+export function BrandDnaDialog({
+  open,
+  initialView = "list",
+  onClose,
+  profiles,
+  onSave,
+  onDelete,
+  t,
+}: BrandDnaDialogProps) {
+  const [view, setView] = useState<View>(initialView);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingCreatedAt, setEditingCreatedAt] = useState<number | null>(null);
   const [mode, setMode] = useState<BrandDnaMode>("automatico");

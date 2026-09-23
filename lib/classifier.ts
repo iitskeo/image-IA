@@ -30,10 +30,9 @@ export interface BrandContext {
   hasLogo: boolean;
 }
 
-// En el free tier, las variantes "lite" llegaron a tardar 20-50 s por
-// congestión mientras que "flash" con razonamiento mínimo responde en 1-2 s
-// — y para clasificar no hace falta razonamiento largo.
-const MODEL_NAME = process.env.GEMINI_TEXT_MODEL || "gemini-3.5-flash";
+// En el plan de pago, flash-lite con razonamiento mínimo respondió en ~1-1.4 s
+// a ~$0.0006 por clasificación — para clasificar no hace falta razonamiento largo.
+const MODEL_NAME = process.env.GEMINI_TEXT_MODEL || "gemini-3.5-flash-lite";
 
 // Cuántas rondas de preguntas de aclaración se permiten como máximo antes de
 // generar igual con lo que haya (evita que el usuario quede atrapado en un

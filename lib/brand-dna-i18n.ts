@@ -39,6 +39,7 @@ export interface BrandDnaDictionary {
   save: string;
   selectorLabel: string;
   selectorNone: string;
+  selectorAdd: string;
 }
 
 export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
@@ -81,6 +82,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "Guardar ADN",
     selectorLabel: "ADN de marca",
     selectorNone: "Sin ADN",
+    selectorAdd: "+ Agregar ADN",
   },
   en: {
     title: "Brand DNA",
@@ -121,6 +123,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "Save DNA",
     selectorLabel: "Brand DNA",
     selectorNone: "No DNA",
+    selectorAdd: "+ Add DNA",
   },
   pt: {
     title: "DNA da marca",
@@ -161,6 +164,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "Salvar DNA",
     selectorLabel: "DNA da marca",
     selectorNone: "Sem DNA",
+    selectorAdd: "+ Adicionar DNA",
   },
   fr: {
     title: "ADN de marque",
@@ -201,6 +205,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "Enregistrer l'ADN",
     selectorLabel: "ADN de marque",
     selectorNone: "Sans ADN",
+    selectorAdd: "+ Ajouter un ADN",
   },
   de: {
     title: "Marken-DNA",
@@ -241,6 +246,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "DNA speichern",
     selectorLabel: "Marken-DNA",
     selectorNone: "Keine DNA",
+    selectorAdd: "+ DNA hinzufügen",
   },
   it: {
     title: "DNA del brand",
@@ -281,6 +287,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "Salva DNA",
     selectorLabel: "DNA del brand",
     selectorNone: "Nessun DNA",
+    selectorAdd: "+ Aggiungi DNA",
   },
   ru: {
     title: "ДНК бренда",
@@ -321,6 +328,7 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "Сохранить ДНК",
     selectorLabel: "ДНК бренда",
     selectorNone: "Без ДНК",
+    selectorAdd: "+ Добавить ДНК",
   },
   zh: {
     title: "品牌DNA",
@@ -361,5 +369,6 @@ export const BRAND_DNA_DICTIONARIES: Record<Locale, BrandDnaDictionary> = {
     save: "保存DNA",
     selectorLabel: "品牌DNA",
     selectorNone: "无DNA",
+    selectorAdd: "+ 添加DNA",
   },
 };
