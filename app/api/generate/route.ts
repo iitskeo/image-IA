@@ -65,6 +65,14 @@ function ensureKeyTexts(classification: ClassificationResult, isPromo: boolean):
       if (safe && !has(safe)) texts.push(safe);
     }
   }
+  // Oferta concreta (antes/ahora): ambos precios son texto obligatorio en la
+  // imagen, igual que fecha/lugar en un evento.
+  if (classification.precioAntes && classification.precioAhora) {
+    for (const value of [classification.precioAntes, classification.precioAhora]) {
+      const safe = clean(value);
+      if (safe && !has(safe)) texts.push(safe);
+    }
+  }
   const title = clean(classification.titulo);
   if (isPromo && texts.length === 0 && title) texts.push(title);
   return texts;

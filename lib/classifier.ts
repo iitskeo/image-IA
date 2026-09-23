@@ -25,6 +25,8 @@ export interface ClassificationResult {
   estilo?: string;
   textosExactos?: string[];
   beneficios?: string[];
+  precioAntes?: string;
+  precioAhora?: string;
   incluirContacto?: boolean;
   incluirMarca?: boolean;
   necesitaAclaracion?: boolean;
@@ -109,6 +111,18 @@ dijo "es de acero y mantiene el frío 12 horas" → ["Acero inoxidable", "Frío 
 redactados muy cortos (1-4 palabras). NUNCA los inventes ni los deduzcas de la foto: la regla es
 no agregar a la imagen nada que el usuario no pidió. Si no escribió ninguno, lista vacía.
 
+"precioAntes"/"precioAhora": SOLO cuando el usuario da un precio ORIGINAL y uno REBAJADO de forma
+explícita y comparativa (ej. "antes 22.000, ahora 15.000", "de $40 a $25"), cópialos tal cual los
+escribió (con su moneda/símbolo). Si solo menciona un precio, o un descuento genérico sin comparar
+contra un precio anterior (ej. "20% de descuento", "Black Friday", "2x1"), deja ambos campos vacíos
+— eso va en "textosExactos"/"beneficios" como siempre, sin tratamiento especial de precio.
+Cuando SÍ diste ambos, esta es una oferta concreta de venta: el "titulo" que redactes debe tener
+más gancho/urgencia de compra (ej. "¡Oferta especial!", "Aprovechá antes de que se acabe", en el
+idioma y tono del usuario) en vez de ser neutro, y los "beneficios" se redactan con esa misma
+energía de venta — siempre basados en lo que el usuario ya dijo, nunca inventando características
+nuevas. Para cualquier otro pedido (eventos, reservas de cita, anuncios generales, descuentos sin
+antes/ahora) el "titulo" se mantiene informativo y profesional, sin forzar urgencia de venta.
+
 Eventos: "textosExactos" debe incluir siempre el nombre del evento, la fecha, la hora y el lugar
 si el usuario los dio (el lugar tal cual lo escribió), además de datos clave como "Entrada gratis".
 
@@ -165,6 +179,16 @@ const RESPONSE_SCHEMA = {
       items: { type: Type.STRING },
       description:
         "2-3 beneficios cortos del producto, solo de lo visible en la foto de referencia o dicho por el usuario. Vacío si no aplica.",
+    },
+    precioAntes: {
+      type: Type.STRING,
+      description:
+        "Precio original, solo si el usuario dio un antes/ahora explícito y comparativo. Vacío en cualquier otro caso.",
+    },
+    precioAhora: {
+      type: Type.STRING,
+      description:
+        "Precio rebajado, solo si el usuario dio un antes/ahora explícito y comparativo. Vacío en cualquier otro caso.",
     },
     incluirContacto: {
       type: Type.BOOLEAN,
@@ -270,7 +294,7 @@ export async function classifyPrompt(
   return sanitizeClassification(parsed, userPrompt);
 }
 
-const SHORT_FIELDS = ["titulo", "fecha", "hora", "lugar", "estilo"] as const;
+const SHORT_FIELDS = ["titulo", "fecha", "hora", "lugar", "estilo", "precioAntes", "precioAhora"] as const;
 const SCHEMA_FIELD_NAMES = /necesitaAclaracion|textosExactos|incluirMarca|incluirContacto|preguntas\s*:/;
 
 function looksBroken(result: ClassificationResult): boolean {

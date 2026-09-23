@@ -57,6 +57,15 @@ export function formatExactTexts(texts: string[] | undefined): string {
     : "";
 }
 
+// Cuando el clasificador detectó una oferta concreta (precio de antes Y de
+// ahora explícitos), instruye al modelo a tratarla como un elemento de
+// diseño real — precio tachado + precio nuevo destacado — en vez de dos
+// líneas de texto plano, y a darle a toda la pieza más energía de venta.
+export function formatPricePromo(precioAntes: string | undefined, precioAhora: string | undefined): string {
+  if (!precioAntes || !precioAhora) return "";
+  return `\n\nPrice promotion: this is a concrete sale — display the "before" price "${precioAntes}" with a clear strikethrough line through it, smaller and visually secondary, right next to the "after" price "${precioAhora}" shown large, bold and prominent (e.g. inside a colored price tag, sash or badge shape) as a clear focal callout near the headline. Lean the overall composition into a more dynamic, energetic, persuasive "on sale" feel rather than a calm editorial one.`;
+}
+
 export interface BrandDnaUsage {
   includeContact?: boolean;
   includeBrand?: boolean;

@@ -651,20 +651,6 @@ export default function Home() {
 
       <div className="flex flex-wrap items-center gap-2 px-1">
         <select
-          value={categoryHint}
-          onChange={(e) => setCategoryHint(e.target.value as Category | "")}
-          aria-label={t.categoryHintLabel}
-          className="rounded-lg border border-line bg-surface-2 px-2 py-1.5 text-xs font-medium text-foreground/70 outline-none focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)]"
-        >
-          <option value="">{t.categoryAuto}</option>
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {t.categories[c] ?? c}
-            </option>
-          ))}
-        </select>
-
-        <select
           value={aspectRatio}
           onChange={(e) => setAspectRatio(e.target.value as AspectRatio)}
           aria-label={t.aspectRatioLabel}

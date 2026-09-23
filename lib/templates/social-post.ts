@@ -8,6 +8,7 @@ import {
   formatBrandDna,
   formatDetails,
   formatExactTexts,
+  formatPricePromo,
   REFERENCE_FIDELITY,
 } from "./shared";
 
@@ -45,5 +46,5 @@ ${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,
     includeBrand: classification.incluirMarca,
     logoAttached,
-  })}`;
+  })}${formatPricePromo(classification.precioAntes, classification.precioAhora)}`;
 }
