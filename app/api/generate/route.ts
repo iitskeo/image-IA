@@ -125,6 +125,11 @@ export async function POST(request: Request) {
     const rawAspectRatio = formData.get("aspectRatio");
     const aspectRatio = isAspectRatio(rawAspectRatio) ? rawAspectRatio : "1:1";
 
+    // Edición de una imagen ya generada (ver ImageEditPanel en el cliente):
+    // la imagen de referencia es la versión anterior de este mismo diseño,
+    // no un producto/persona que deba quedar idéntico.
+    const isEdit = formData.get("editMode") === "1";
+
     const rawBrandDna = formData.get("brandDna");
     let brandDna;
     if (typeof rawBrandDna === "string" && rawBrandDna) {
@@ -197,6 +202,7 @@ export async function POST(request: Request) {
       logoAttached: Boolean(logoImage),
       aspectRatio,
       brandDna,
+      isEdit,
     });
 
     const direction = await directArt(guidelines, textPlan, classification.categoria, referenceImages.length > 0);

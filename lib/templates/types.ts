@@ -10,4 +10,7 @@ export interface TemplateInput {
   logoAttached: boolean;
   aspectRatio: AspectRatio;
   brandDna?: BrandDna;
+  // true cuando la imagen de referencia es la versión anterior de este mismo
+  // diseño (edición vía chat), no un producto/persona que deba quedar idéntico.
+  isEdit?: boolean;
 }

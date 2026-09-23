@@ -6,11 +6,13 @@ import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { BrandDnaDialog } from "@/components/BrandDnaDialog";
 import { ClarificationCard, type ClarificationQuestion } from "@/components/ClarificationCard";
+import { ImageEditPanel } from "@/components/ImageEditPanel";
 import {
   DownloadIcon,
   LoaderIcon,
   MenuIcon,
   PaperclipIcon,
+  PencilIcon,
   SendIcon,
   StopIcon,
   XIcon,
@@ -31,9 +33,9 @@ import {
   type ChatTurn,
 } from "@/lib/history";
 import { CATEGORIES, type Category } from "@/lib/categories";
-import { ASPECT_RATIOS, type AspectRatio } from "@/lib/aspect-ratio";
+import { ASPECT_RATIOS, isAspectRatio, type AspectRatio } from "@/lib/aspect-ratio";
 import { BRAND_DNA_STORAGE_KEY, MAX_BRAND_DNA_PROFILES, type BrandDna } from "@/lib/brand-dna";
-import { normalizeImageToAspectRatio, prepareReferenceImage } from "@/lib/image-client";
+import { dataUrlToFile, normalizeImageToAspectRatio, prepareReferenceImage } from "@/lib/image-client";
 import { MAX_REFERENCE_IMAGES } from "@/lib/validation";
 
 const LOCALE_STORAGE_KEY = "ia-images-locale";
@@ -72,6 +74,13 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollBottomRef = useRef<HTMLDivElement>(null);
 
+  // Edición de imágenes vía chat: estado separado del de generación normal
+  // (sessions/errors) para que una edición en curso nunca aparezca como un
+  // turno más en el chat principal — solo vive dentro de la ventanita.
+  const [editPanel, setEditPanel] = useState<{ chatId: string; rootId: string } | null>(null);
+  const [editSessions, setEditSessions] = useState<Record<string, AbortController>>({});
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
   const [brandDnaProfiles, setBrandDnaProfiles] = useState<BrandDna[]>([]);
   const [brandDnaDialogOpen, setBrandDnaDialogOpen] = useState(false);
   const [brandDnaDialogView, setBrandDnaDialogView] = useState<"list" | "create">("list");
@@ -99,7 +108,6 @@ export default function Home() {
     try {
       const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
       if ((SUPPORTED_LOCALES as string[]).includes(storedLocale ?? "")) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocale(storedLocale as Locale);
       } else {
         setLocale(detectBrowserLocale());
@@ -402,6 +410,7 @@ export default function Home() {
         image,
         category: data.category,
         createdAt: Date.now(),
+        aspectRatio: options.aspectRatio,
       };
 
       persistHistory((prev) => {
@@ -484,12 +493,120 @@ export default function Home() {
     });
   }
 
+  function openEditPanel(chatId: string, rootId: string) {
+    setEditPanel({ chatId, rootId });
+  }
+
+  function closeEditPanel() {
+    setEditPanel(null);
+  }
+
+  async function handleEditSubmit(instruction: string) {
+    if (!editPanel) return;
+    const { chatId, rootId } = editPanel;
+    const chat = historyRef.current.find((c) => c.id === chatId);
+    const rootTurn = chat?.turns.find((t) => t.id === rootId);
+    if (!chat || !rootTurn) return;
+
+    const thread = chat.turns
+      .filter((t) => t.id === rootId || t.rootId === rootId)
+      .sort((a, b) => a.createdAt - b.createdAt);
+    const latest = thread[thread.length - 1] ?? rootTurn;
+
+    setEditErrors((prev) => {
+      if (!(rootId in prev)) return prev;
+      const next = { ...prev };
+      delete next[rootId];
+      return next;
+    });
+
+    const controller = new AbortController();
+    setEditSessions((prev) => ({ ...prev, [rootId]: controller }));
+
+    try {
+      const referenceFile = await dataUrlToFile(latest.image, "referencia.jpg");
+      const editAspectRatio: AspectRatio = isAspectRatio(latest.aspectRatio) ? latest.aspectRatio : "1:1";
+      const editCategoryHint = (CATEGORIES as readonly string[]).includes(latest.category)
+        ? (latest.category as Category)
+        : undefined;
+
+      const formData = new FormData();
+      formData.set("prompt", `${rootTurn.prompt}\n\n(Edit requested: ${instruction})`);
+      // El clasificador ya no pregunta nada a partir de esta ronda (ver
+      // MAX_CLARIFICATION_ROUNDS en lib/classifier.ts) — la ventanita de
+      // edición no tiene UI para mostrar preguntas de aclaración.
+      formData.set("clarificationRound", "2");
+      formData.set("aspectRatio", editAspectRatio);
+      formData.set("editMode", "1");
+      if (editCategoryHint) formData.set("categoryHint", editCategoryHint);
+      formData.append("referenceImage", referenceFile);
+
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo generar la imagen.");
+
+      const image = await normalizeImageToAspectRatio(data.image, editAspectRatio);
+      const turn: ChatTurn = {
+        id: crypto.randomUUID(),
+        prompt: instruction,
+        image,
+        category: data.category,
+        createdAt: Date.now(),
+        aspectRatio: editAspectRatio,
+        editOf: latest.id,
+        rootId,
+      };
+
+      persistHistory((prev) => {
+        const existing = prev.find((c) => c.id === chatId);
+        if (!existing) return prev;
+        const rest = prev.filter((c) => c.id !== chatId);
+        const updatedChat: Chat = {
+          ...existing,
+          turns: [...existing.turns, turn].slice(-MAX_TURNS_PER_CHAT),
+          updatedAt: Date.now(),
+        };
+        return [updatedChat, ...rest].slice(0, MAX_HISTORY);
+      });
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        setEditErrors((prev) => ({
+          ...prev,
+          [rootId]: err instanceof Error ? err.message : "Ocurrió un error inesperado.",
+        }));
+      }
+    } finally {
+      setEditSessions((prev) => {
+        if (!(rootId in prev)) return prev;
+        const next = { ...prev };
+        delete next[rootId];
+        return next;
+      });
+    }
+  }
+
   const activeChat = history.find((chat) => chat.id === activeId) ?? null;
   const turns = activeChat?.turns ?? [];
+  // Las ediciones (turn.editOf) no se muestran como turnos propios en el
+  // chat principal — viven solo dentro de su ventanita (ver ImageEditPanel).
+  const rootTurns = turns.filter((turn) => !turn.editOf);
   const isChatView = activeId !== null;
   const activeSession = activeId ? sessions[activeId] : undefined;
   const activeSessionKind = activeSession?.kind;
   const activeError = activeId ? errors[activeId] : undefined;
+
+  const editPanelChat = editPanel ? history.find((c) => c.id === editPanel.chatId) : undefined;
+  const editPanelTurns = editPanel
+    ? (editPanelChat?.turns ?? [])
+        .filter((t) => t.id === editPanel.rootId || t.rootId === editPanel.rootId)
+        .sort((a, b) => a.createdAt - b.createdAt)
+    : [];
+  const editPanelGenerating = editPanel ? Boolean(editSessions[editPanel.rootId]) : false;
+  const editPanelError = editPanel ? (editErrors[editPanel.rootId] ?? null) : null;
 
   // Baja automáticamente al fondo cuando aparece un nuevo turno, empieza a
   // generar, llegan preguntas de aclaración, o se cambia de chat — para que
@@ -685,35 +802,48 @@ export default function Home() {
             <>
               <div className="custom-scroll flex-1 overflow-y-auto">
                 <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-10">
-                  {turns.map((turn) => (
-                    <div key={turn.id} className="flex flex-col gap-6">
-                      <div className="flex justify-end">
-                        <div className="max-w-lg rounded-2xl rounded-tr-sm bg-surface-2 px-4 py-2.5 text-sm text-foreground">
-                          {turn.prompt}
+                  {rootTurns.map((turn) => {
+                    const editCount = turns.filter((t) => t.rootId === turn.id).length;
+                    return (
+                      <div key={turn.id} className="flex flex-col gap-6">
+                        <div className="flex justify-end">
+                          <div className="max-w-lg rounded-2xl rounded-tr-sm bg-surface-2 px-4 py-2.5 text-sm text-foreground">
+                            {turn.prompt}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <span className="w-fit rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-foreground/60">
+                            {t.categories[turn.category] ?? turn.category}
+                          </span>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={turn.image}
+                            alt={turn.prompt}
+                            className="w-full rounded-2xl border border-line object-cover"
+                          />
+                          <div className="flex flex-wrap items-center gap-1">
+                            <a
+                              href={turn.image}
+                              download={`ia-image-${turn.id}.${turn.image.startsWith("data:image/png") ? "png" : "jpg"}`}
+                              className="flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/60 hover:bg-surface-2 hover:text-foreground"
+                            >
+                              <DownloadIcon className="h-3.5 w-3.5" />
+                              {t.download}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => activeId && openEditPanel(activeId, turn.id)}
+                              className="flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/60 hover:bg-surface-2 hover:text-foreground"
+                            >
+                              <PencilIcon className="h-3.5 w-3.5" />
+                              {editCount > 0 ? t.editedCount.replace("{n}", String(editCount)) : t.editImage}
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="flex flex-col gap-2">
-                        <span className="w-fit rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-foreground/60">
-                          {t.categories[turn.category] ?? turn.category}
-                        </span>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={turn.image}
-                          alt={turn.prompt}
-                          className="w-full rounded-2xl border border-line object-cover"
-                        />
-                        <a
-                          href={turn.image}
-                          download={`ia-image-${turn.id}.${turn.image.startsWith("data:image/png") ? "png" : "jpg"}`}
-                          className="flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/60 hover:bg-surface-2 hover:text-foreground"
-                        >
-                          <DownloadIcon className="h-3.5 w-3.5" />
-                          {t.download}
-                        </a>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {activeSession && (
                     <div className="flex flex-col gap-6">
@@ -793,6 +923,16 @@ export default function Home() {
         onSave={handleSaveBrandDna}
         onDelete={handleDeleteBrandDna}
         t={brandDnaT}
+      />
+
+      <ImageEditPanel
+        open={editPanel !== null}
+        onClose={closeEditPanel}
+        turns={editPanelTurns}
+        generating={editPanelGenerating}
+        error={editPanelError}
+        onSubmit={handleEditSubmit}
+        t={t}
       />
     </div>
   );

@@ -4,6 +4,13 @@ export interface ChatTurn {
   image: string;
   category: string;
   createdAt: number;
+  // Ausente en turnos guardados antes de esta versión — se asume "1:1".
+  aspectRatio?: string;
+  // Presentes solo en ediciones (ver ImageEditPanel): editOf es el turno del
+  // que es edición inmediata, rootId es la imagen original del hilo. Un
+  // turno sin estos campos es una generación normal (turno raíz).
+  editOf?: string;
+  rootId?: string;
 }
 
 export interface Chat {

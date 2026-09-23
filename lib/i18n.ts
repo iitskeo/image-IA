@@ -33,6 +33,11 @@ export interface Dictionary {
   categoryHintLabel: string;
   categoryAuto: string;
   aspectRatioLabel: string;
+  editImage: string;
+  editedCount: string;
+  editPlaceholder: string;
+  editOriginal: string;
+  editSend: string;
   categories: Record<string, string>;
   aspectRatios: Record<string, string>;
 }
@@ -72,6 +77,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Categoría",
     categoryAuto: "Detectar automáticamente",
     aspectRatioLabel: "Proporción",
+    editImage: "Editar imagen",
+    editedCount: "Editada ({n})",
+    editPlaceholder: "¿Qué quieres cambiar en esta imagen?",
+    editOriginal: "Versión original",
+    editSend: "Enviar cambio",
     categories: {
       poster_evento: "Poster de evento",
       post_redes: "Post para redes",
@@ -121,6 +131,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Category",
     categoryAuto: "Auto-detect",
     aspectRatioLabel: "Aspect ratio",
+    editImage: "Edit image",
+    editedCount: "Edited ({n})",
+    editPlaceholder: "What do you want to change in this image?",
+    editOriginal: "Original version",
+    editSend: "Send edit",
     categories: {
       poster_evento: "Event poster",
       post_redes: "Social media post",
@@ -170,6 +185,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Categoria",
     categoryAuto: "Detectar automaticamente",
     aspectRatioLabel: "Proporção",
+    editImage: "Editar imagem",
+    editedCount: "Editada ({n})",
+    editPlaceholder: "O que você quer mudar nesta imagem?",
+    editOriginal: "Versão original",
+    editSend: "Enviar edição",
     categories: {
       poster_evento: "Pôster de evento",
       post_redes: "Post para redes sociais",
@@ -219,6 +239,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Catégorie",
     categoryAuto: "Détection automatique",
     aspectRatioLabel: "Format",
+    editImage: "Modifier l'image",
+    editedCount: "Modifiée ({n})",
+    editPlaceholder: "Que veux-tu changer dans cette image ?",
+    editOriginal: "Version originale",
+    editSend: "Envoyer la modification",
     categories: {
       poster_evento: "Affiche d'événement",
       post_redes: "Publication réseaux sociaux",
@@ -268,6 +293,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Kategorie",
     categoryAuto: "Automatisch erkennen",
     aspectRatioLabel: "Seitenverhältnis",
+    editImage: "Bild bearbeiten",
+    editedCount: "Bearbeitet ({n})",
+    editPlaceholder: "Was möchtest du an diesem Bild ändern?",
+    editOriginal: "Originalversion",
+    editSend: "Änderung senden",
     categories: {
       poster_evento: "Veranstaltungsplakat",
       post_redes: "Social-Media-Beitrag",
@@ -317,6 +347,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Categoria",
     categoryAuto: "Rilevamento automatico",
     aspectRatioLabel: "Proporzioni",
+    editImage: "Modifica immagine",
+    editedCount: "Modificata ({n})",
+    editPlaceholder: "Cosa vuoi cambiare in questa immagine?",
+    editOriginal: "Versione originale",
+    editSend: "Invia modifica",
     categories: {
       poster_evento: "Poster evento",
       post_redes: "Post social",
@@ -366,6 +401,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "Категория",
     categoryAuto: "Определить автоматически",
     aspectRatioLabel: "Пропорции",
+    editImage: "Редактировать изображение",
+    editedCount: "Отредактировано ({n})",
+    editPlaceholder: "Что вы хотите изменить на этом изображении?",
+    editOriginal: "Исходная версия",
+    editSend: "Отправить изменение",
     categories: {
       poster_evento: "Постер мероприятия",
       post_redes: "Пост для соцсетей",
@@ -414,6 +454,11 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     categoryHintLabel: "类别",
     categoryAuto: "自动检测",
     aspectRatioLabel: "比例",
+    editImage: "编辑图片",
+    editedCount: "已编辑（{n}）",
+    editPlaceholder: "您想更改这张图片的什么内容？",
+    editOriginal: "原始版本",
+    editSend: "发送修改",
     categories: {
       poster_evento: "活动海报",
       post_redes: "社交媒体帖子",

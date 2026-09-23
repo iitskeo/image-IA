@@ -42,6 +42,12 @@ export function formatDetails(
 // perder detalles). Se trata como una foto de producto real que no se toca.
 export const REFERENCE_FIDELITY = `- Every product/subject from the user's reference image(s) must appear EXACTLY as in those photos: identical shape, proportions, colors, materials, finish and every printed graphic, logo and text on it. Do not redraw, recolor, restyle, simplify or "correct" any part of it (never change a graphic's colors to match a character's official look). It may be shown upright or with a slight dynamic tilt, but its appearance must stay identical.`;
 
+// Edición de una imagen ya generada: a diferencia de REFERENCE_FIDELITY (que
+// exige reproducir un producto/persona sin ningún cambio), aquí la
+// referencia ES el diseño anterior y el objetivo es modificarlo a propósito
+// — solo lo que el brief pide cambiar, todo lo demás se mantiene.
+export const EDIT_FIDELITY = `- The reference image is the PREVIOUS version of this exact design (not a product or person to keep untouched). Preserve its overall composition, layout, colors, typography, branding elements and style — change ONLY what the brief explicitly asks to change; everything else must remain visually consistent with that previous version.`;
+
 // Textos que el usuario quiere literalmente en la imagen, tal cual los
 // escribió (el clasificador los extrae sin corregir ortografía de nombres).
 export function formatExactTexts(texts: string[] | undefined): string {

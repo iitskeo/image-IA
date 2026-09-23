@@ -97,6 +97,15 @@ export async function prepareReferenceImage(file: File): Promise<File> {
   }
 }
 
+// Convierte una imagen ya generada (data URL guardada en el historial) en un
+// File reutilizable como imagen de referencia — el inverso de lo que hace el
+// input de archivos normal, para la edición de imágenes vía chat.
+export async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], filename, { type: blob.type || "image/jpeg" });
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
