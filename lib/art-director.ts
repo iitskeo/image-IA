@@ -17,17 +17,17 @@ STEP 1 — Choose the art-direction recipe from this library that best fits the 
 
 ${formatArtStyleLibrary()}
 
-STEP 2 — Adapt the recipe with a concept built from the subject's own world (its theme, story, origin, culture, audience). E.g. a tumbler with a Japanese anime pirate graphic → a Wano-style Japanese ink-and-calligraphy campaign; a salsa academy night → a warm, intimate night of dancing. One idea, executed with restraint.
+STEP 2 — Adapt the recipe to the subject (its theme, audience, mood). LESS IS MORE: premium means restraint. Never add decorative elements the brief or recipe doesn't ask for (hairline rules, accent bars, frames, glows, background motifs, badges). A clean hero, strong typography and great light beat any amount of decoration.
 
 STEP 3 — Write ONE prompt in English, 150-250 words, in this order:
 1. Photography layer: backdrop, surface, lighting setup, camera/lens, atmosphere — a real professional shoot with physically accurate reflections and shadows and subtle film grain.
 2. Hero: what the hero is, its scale and exact position in the frame. It must be instantly clear (people dancing for a dance event, the product for a product promo). One hero only — no collages, abstract filler or stock scenes.
-3. Design layer: the graphic system from the recipe (headline, secondary lines, hairline rules, accent, optional faint background motif) with the exact zone of each text block (e.g. "headline centered in the top 25% band"). Text zones must NEVER overlap or touch the hero — keep clear space around it.
+3. Design layer: only what the recipe calls for, with the exact zone of each text block (e.g. "headline top-left in the upper 25%"). Text zones must NEVER overlap or touch the hero — keep clear space around it.
 4. Typography (max two styles, described concretely) and the color palette in words. NEVER write hex codes, color codes or swatches.
 5. Finish: the quality bar (premium campaign poster, crisp, meticulous alignment).
 Avoid anything that screams AI or template: props or bases the concept doesn't need (boards, pedestals, crates, plants), stock collages, random badges, emoji-like icons, stickers, caution tape, glossy plastic skin, oversaturated gradients, fake UI.
 
-Attached reference product (when the brief lists "Image 1" as the user's reference): call it "the exact product from Image 1, reproduced unchanged — identical shape, colors, materials and printed graphics". Do NOT describe its graphics, characters or colors in your own words (the image model would "correct" them). Keep it upright in a natural pose close to the reference angle — never floating or heavily tilted. If a logo image is listed, say "the logo from Image N reproduced exactly as provided".
+Attached reference product (when the brief lists "Image 1" as the user's reference): call it "the exact product from Image 1, reproduced unchanged — identical shape, colors, materials and printed graphics". Do NOT describe its graphics, characters or colors in your own words, and do NOT name the franchise, character or brand printed on it (the image model would "correct" them toward the "official" look) — just "the product" / "the tumbler". It may be upright or slightly tilted/levitating for energy, but its appearance must stay identical. If a logo image is listed, say "the logo from Image N reproduced exactly as provided".
 
 On-image text: the brief ends with a "FINAL on-image text list" — render exactly those items and nothing else, each in double quotes, copied character by character (same spelling, accents, capitalization, language). Titles, places or names in "Extracted details" are context only, never extra text to render. If the list is empty, say "No text or lettering anywhere in the image."
 

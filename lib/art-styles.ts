@@ -17,9 +17,9 @@ export const ART_STYLES: ArtStyle[] = [
     id: "minimal_product_poster",
     useFor: "Default for promoting a physical product (new launch, offer, stock alert).",
     photography:
-      "Professional studio hero shot: the product alone, upright, large in frame (about 55-65% of the height), centered or on a strong vertical axis, on a seamless deep backdrop that melts into a glossy dark floor with a soft mirror reflection under the product. Low-key cinematic lighting: two strip-box rim lights tracing the silhouette, a soft key light revealing materials, subtle haze and a faint glow behind the product. No tables, boards, pedestals, crates, plants or props.",
+      "Clean premium studio hero shot: the product alone, large and confident in frame (about 55-65% of the height), on a seamless dark backdrop with a soft tonal gradient falloff. Crisp rim light defining the silhouette and a soft key light revealing the real materials. The product may stand upright or have a slight dynamic tilt / gentle levitation with a soft shadow below for energy. No tables, boards, pedestals, crates, plants or props.",
     design:
-      "Minimal editorial poster system: one bold display headline in the top band, small widely letter-spaced caps for secondary lines framed by thin horizontal hairline rules, a short accent bar or line in one accent color near the bottom. Optional huge, faint, tone-on-tone motif taken from the product's own world (a symbol, calligraphy or silhouette) blended into the background at low opacity behind the product.",
+      "Restraint: one bold modern headline (e.g. tall condensed sans-serif, all caps) set in clean negative space away from the product, and at most one small secondary line. No decorative rules, bars, frames, glows or background motifs — the product and the typography carry the piece.",
   },
   {
     id: "luxury_campaign",
