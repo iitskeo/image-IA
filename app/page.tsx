@@ -13,6 +13,7 @@ import {
   PaperclipIcon,
   SendIcon,
   StopIcon,
+  XIcon,
 } from "@/components/icons";
 import {
   DICTIONARIES,
@@ -33,6 +34,7 @@ import { CATEGORIES, type Category } from "@/lib/categories";
 import { ASPECT_RATIOS, type AspectRatio } from "@/lib/aspect-ratio";
 import { BRAND_DNA_STORAGE_KEY, MAX_BRAND_DNA_PROFILES, type BrandDna } from "@/lib/brand-dna";
 import { normalizeImageToAspectRatio, prepareReferenceImage } from "@/lib/image-client";
+import { MAX_REFERENCE_IMAGES } from "@/lib/validation";
 
 const LOCALE_STORAGE_KEY = "ia-images-locale";
 const ADD_BRAND_DNA_OPTION = "__add_brand_dna__";
@@ -40,7 +42,7 @@ const ADD_BRAND_DNA_OPTION = "__add_brand_dna__";
 interface GenerationChoices {
   categoryHint: Category | "";
   aspectRatio: AspectRatio;
-  referenceFile: File | null;
+  referenceFiles: File[];
   brandDna: BrandDna | null;
 }
 
@@ -62,8 +64,7 @@ export default function Home() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [prompt, setPrompt] = useState("");
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
-  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<{ file: File; preview: string }[]>([]);
   const [categoryHint, setCategoryHint] = useState<Category | "">("");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [sessions, setSessions] = useState<Record<string, ChatSession>>({});
@@ -212,7 +213,7 @@ export default function Home() {
 
   function resetComposer() {
     setPrompt("");
-    clearReferenceImage();
+    clearReferenceImages();
     setCategoryHint("");
     setAspectRatio("1:1");
     setSelectedBrandDnaId("");
@@ -223,7 +224,7 @@ export default function Home() {
   // marca seleccionados para el siguiente prompt del mismo chat.
   function clearSubmittedPrompt() {
     setPrompt("");
-    clearReferenceImage();
+    clearReferenceImages();
   }
 
   function handleNewChat() {
@@ -265,16 +266,23 @@ export default function Home() {
     setSettingsOpen(false);
   }
 
-  // Punto único para adjuntar la referencia: botón, pegar (Ctrl+V) o arrastrar.
-  const attachReferenceFile = useCallback(async (file: File) => {
-    const prepared = await prepareReferenceImage(file);
-    setReferenceFile(prepared);
-    setReferencePreview(URL.createObjectURL(prepared));
+  // Punto único para adjuntar referencias (botón, pegar o arrastrar): se
+  // acumulan hasta el máximo en vez de reemplazar la anterior.
+  const addReferenceFiles = useCallback(async (files: File[]) => {
+    const images = files.filter((f) => f.type.startsWith("image/")).slice(0, MAX_REFERENCE_IMAGES);
+    if (!images.length) return;
+    const prepared = await Promise.all(images.map((f) => prepareReferenceImage(f)));
+    const added = prepared.map((file) => ({ file, preview: URL.createObjectURL(file) }));
+    setReferenceImages((prev) => [...prev, ...added].slice(0, MAX_REFERENCE_IMAGES));
   }, []);
 
+  function removeReferenceImage(index: number) {
+    setReferenceImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) void attachReferenceFile(file);
+    void addReferenceFiles(Array.from(e.target.files ?? []));
+    e.target.value = "";
   }
 
   const anyDialogOpen = brandDnaDialogOpen || settingsOpen;
@@ -285,14 +293,14 @@ export default function Home() {
   useEffect(() => {
     if (anyDialogOpen) return;
     function handlePaste(e: ClipboardEvent) {
-      const image = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/"));
-      if (!image) return;
+      const images = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
+      if (!images.length) return;
       e.preventDefault();
-      void attachReferenceFile(image);
+      void addReferenceFiles(images);
     }
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, [anyDialogOpen, attachReferenceFile]);
+  }, [anyDialogOpen, addReferenceFiles]);
 
   // Arrastrar una imagen sobre la app la adjunta como referencia. El contador
   // evita el parpadeo del overlay al pasar por encima de elementos hijos.
@@ -327,13 +335,11 @@ export default function Home() {
     e.preventDefault();
     dragDepthRef.current = 0;
     setDraggingFile(false);
-    const image = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith("image/"));
-    if (image) void attachReferenceFile(image);
+    void addReferenceFiles(Array.from(e.dataTransfer.files));
   }
 
-  function clearReferenceImage() {
-    setReferenceFile(null);
-    setReferencePreview(null);
+  function clearReferenceImages() {
+    setReferenceImages([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -359,7 +365,7 @@ export default function Home() {
       formData.set("clarificationRound", String(options.round));
       formData.set("aspectRatio", options.aspectRatio);
       if (options.categoryHint) formData.set("categoryHint", options.categoryHint);
-      if (options.referenceFile) formData.set("referenceImage", options.referenceFile);
+      options.referenceFiles.forEach((file) => formData.append("referenceImage", file));
       if (options.brandDna) formData.set("brandDna", JSON.stringify(options.brandDna));
 
       const res = await fetch("/api/generate", {
@@ -382,7 +388,7 @@ export default function Home() {
           questions: (data.questions ?? []) as ClarificationQuestion[],
           categoryHint: options.categoryHint,
           aspectRatio: options.aspectRatio,
-          referenceFile: options.referenceFile,
+          referenceFiles: options.referenceFiles,
           brandDna: options.brandDna,
         });
         return;
@@ -440,7 +446,7 @@ export default function Home() {
     // vacíe de inmediato (como un chat normal) sin perder lo que se mandó.
     const submittedCategoryHint = categoryHint;
     const submittedAspectRatio = aspectRatio;
-    const submittedReferenceFile = referenceFile;
+    const submittedReferenceFiles = referenceImages.map((img) => img.file);
     const submittedBrandDna = brandDnaProfiles.find((d) => d.id === selectedBrandDnaId) ?? null;
     clearSubmittedPrompt();
 
@@ -450,7 +456,7 @@ export default function Home() {
       chatId,
       categoryHint: submittedCategoryHint,
       aspectRatio: submittedAspectRatio,
-      referenceFile: submittedReferenceFile,
+      referenceFiles: submittedReferenceFiles,
       brandDna: submittedBrandDna,
     });
   }
@@ -473,7 +479,7 @@ export default function Home() {
       chatId: activeId,
       categoryHint: session.categoryHint,
       aspectRatio: session.aspectRatio,
-      referenceFile: session.referenceFile,
+      referenceFiles: session.referenceFiles,
       brandDna: session.brandDna,
     });
   }
@@ -506,21 +512,23 @@ export default function Home() {
         className="w-full resize-none rounded-xl bg-transparent p-2 text-sm text-foreground outline-none placeholder:text-foreground/35"
       />
 
-      {referencePreview && (
-        <div className="flex items-center gap-3 px-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={referencePreview}
-            alt={t.attach}
-            className="h-14 w-14 rounded-lg object-cover"
-          />
-          <button
-            type="button"
-            onClick={clearReferenceImage}
-            className="text-xs font-medium text-foreground/50 hover:text-foreground"
-          >
-            {t.removeImage}
-          </button>
+      {referenceImages.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 px-2 pt-1">
+          {referenceImages.map((img, i) => (
+            <div key={img.preview} className="relative h-14 w-14">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.preview} alt={t.attach} className="h-14 w-14 rounded-lg object-cover" />
+              <button
+                type="button"
+                onClick={() => removeReferenceImage(i)}
+                aria-label={t.removeImage}
+                title={t.removeImage}
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-background text-foreground/70 shadow ring-1 ring-line hover:text-foreground"
+              >
+                <XIcon className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -579,14 +587,21 @@ export default function Home() {
       <div className="flex items-center justify-between px-1 pb-0.5">
         <label
           title={t.attachHint}
-          className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/50 transition-colors hover:bg-surface-2 hover:text-foreground/80"
+          className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-foreground/50 transition-colors ${
+            referenceImages.length >= MAX_REFERENCE_IMAGES
+              ? "cursor-not-allowed opacity-40"
+              : "cursor-pointer hover:bg-surface-2 hover:text-foreground/80"
+          }`}
         >
           <PaperclipIcon className="h-4 w-4" />
           {t.attach}
+          {referenceImages.length > 0 && ` (${referenceImages.length}/${MAX_REFERENCE_IMAGES})`}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            multiple
+            disabled={referenceImages.length >= MAX_REFERENCE_IMAGES}
             onChange={handleFileChange}
             className="hidden"
           />

@@ -38,7 +38,7 @@ export function formatDetails(
 // El modelo tendía a "redibujar" el producto de la referencia (ej. cambiar el
 // color de un gráfico al look "oficial" de un personaje, o inclinarlo y
 // perder detalles). Se trata como una foto de producto real que no se toca.
-export const REFERENCE_FIDELITY = `- The product/subject from the user's reference image must appear EXACTLY as in that photo: identical shape, proportions, colors, materials, finish and every printed graphic, logo and text on it. Do not redraw, recolor, restyle, simplify or "correct" any part of it (never change a graphic's colors to match a character's official look). It may be shown upright or with a slight dynamic tilt, but its appearance must stay identical.`;
+export const REFERENCE_FIDELITY = `- Every product/subject from the user's reference image(s) must appear EXACTLY as in those photos: identical shape, proportions, colors, materials, finish and every printed graphic, logo and text on it. Do not redraw, recolor, restyle, simplify or "correct" any part of it (never change a graphic's colors to match a character's official look). It may be shown upright or with a slight dynamic tilt, but its appearance must stay identical.`;
 
 // Textos que el usuario quiere literalmente en la imagen, tal cual los
 // escribió (el clasificador los extrae sin corregir ortografía de nombres).
@@ -57,11 +57,16 @@ export interface BrandDnaUsage {
 
 // Describe las imágenes adjuntas por número, para que el modelo (y el paso de
 // director de arte) sepa cuál es la referencia del usuario y cuál el logo.
-export function formatAttachments(hasReferenceImage: boolean, logoAttached: boolean): string {
+export function formatAttachments(referenceCount: number, logoAttached: boolean): string {
   const lines: string[] = [];
-  let index = 1;
-  if (hasReferenceImage) lines.push(`- Image ${index++}: the user's reference image (subject/product to feature).`);
-  if (logoAttached) lines.push(`- Image ${index}: the brand logo — reproduce it exactly as provided.`);
+  if (referenceCount === 1) {
+    lines.push("- Image 1: the user's reference image (subject/product to feature).");
+  } else if (referenceCount > 1) {
+    lines.push(
+      `- Images 1-${referenceCount}: the user's reference images (the subjects/products to feature, as the brief describes).`
+    );
+  }
+  if (logoAttached) lines.push(`- Image ${referenceCount + 1}: the brand logo — reproduce it exactly as provided.`);
   return lines.length ? `\nAttached images:\n${lines.join("\n")}` : "";
 }
 
@@ -82,6 +87,9 @@ export function formatBrandDna(
   if (brandDna.tone) lines.push(`- Brand tone: "${brandDna.tone}"`);
   if (brandDna.audience) lines.push(`- Target audience: "${brandDna.audience}"`);
   if (brandDna.styleNotes) lines.push(`- Additional style notes: "${brandDna.styleNotes}"`);
+  if (brandDna.typography) {
+    lines.push(`- Brand typography: "${brandDna.typography}" — set the headline and text in this typographic style.`);
+  }
   if (includeBrand) {
     lines.push(
       logoAttached

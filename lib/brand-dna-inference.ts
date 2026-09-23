@@ -23,11 +23,13 @@ export interface BrandDnaInferenceInput {
 export interface BrandDnaInferenceResult {
   audience?: string;
   styleNotes?: string;
+  typography?: string;
 }
 
 const SYSTEM_INSTRUCTION = `Eres un asistente de branding. A partir de información breve sobre una marca (a qué se dedica, tono, colores) y, si se incluyen, imágenes reales de la marca (capturas de redes, logo, fotos de producto), infiere con criterio profesional:
 - audience: el público objetivo más probable (una frase breve).
 - styleNotes: qué buscar o evitar visualmente en el diseño para esta marca (1-2 frases breves).
+- typography: SOLO si en las imágenes se ve tipografía de la marca (logo, titulares de sus posts): describe su estilo tipográfico y la fuente conocida más parecida, en una frase corta (ej. "Sans-serif geométrica en negrita, estilo Montserrat Bold"). Si no se ve tipografía de marca en las imágenes, cadena vacía.
 
 Si se incluyen imágenes, obsérvalas con atención real (estilo fotográfico, tipografía, composición, paleta, nivel de formalidad, calidad de producción) y deja que eso informe tu respuesta — no te limites a los colores dominantes, esa parte ya se calculó aparte. Si la información es insuficiente para inferir algo con confianza razonable, deja ese campo como cadena vacía en vez de inventar algo genérico sin sentido.`;
 
@@ -39,8 +41,12 @@ const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: "Notas de estilo visual (qué buscar/evitar), o vacío si no se puede inferir.",
     },
+    typography: {
+      type: Type.STRING,
+      description: "Estilo tipográfico visto en las imágenes de la marca + fuente conocida más parecida, o vacío.",
+    },
   },
-  required: ["audience", "styleNotes"],
+  required: ["audience", "styleNotes", "typography"],
 };
 
 function getClient(): GoogleGenAI {
@@ -99,6 +105,7 @@ export async function inferBrandDnaFields(
     return {
       audience: parsed.audience?.trim() || undefined,
       styleNotes: parsed.styleNotes?.trim() || undefined,
+      typography: parsed.typography?.trim() || undefined,
     };
   } catch {
     // Blindaje: si la inferencia falla, simplemente no se completan esos

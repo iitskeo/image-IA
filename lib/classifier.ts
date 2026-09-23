@@ -1,7 +1,12 @@
 import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { CATEGORIES, type Category } from "./categories";
-import { withRetry } from "./retry";
+import { defaultIsRetryable, withRetry } from "./retry";
 import type { ReferenceImage } from "./providers/image-provider";
+
+function isTimeoutError(err: unknown): boolean {
+  const name = (err as { name?: unknown } | null)?.name;
+  return name === "TimeoutError" || name === "AbortError";
+}
 
 export { CATEGORIES, type Category };
 
@@ -99,16 +104,13 @@ precios ni slogans que el usuario no dio (las características del producto no v
 retratos: lista vacía salvo que el usuario pida texto. Copia también con la ortografía exacta
 del usuario los campos "titulo" y "lugar".
 
-"beneficios": solo en piezas promocionales de un producto con imagen de referencia: 2-3 beneficios
-muy cortos (1-4 palabras cada uno, en el idioma del usuario) basados ÚNICAMENTE en lo que se ve
-en la foto (material visible, tipo de tapa, diseño/estampado, acabado) o en lo que dijo el usuario.
-Solo atributos FÍSICOS VISIBLES: material, color, acabado, forma, estampado (ej. "Acero inoxidable",
-"Tapa negra", "Diseño exclusivo"). NUNCA adjetivos funcionales o de desempeño, porque no se pueden
-ver en una foto (ej. "hermética", "antiderrames", "térmico", "aislamiento térmico", "mantiene el
-frío 24 h", "libre de BPA", "resistente al agua", "duradero", "ergonómico") salvo que el usuario
-los haya dicho. Tampoco nombres
-personajes ni marcas registradas del estampado (di "Diseño exclusivo", no el nombre del personaje).
-En cualquier otro caso, lista vacía.
+"beneficios": SOLO los beneficios o características que el USUARIO escribió en su pedido (ej. si
+dijo "es de acero y mantiene el frío 12 horas" → ["Acero inoxidable", "Frío por 12 horas"]),
+redactados muy cortos (1-4 palabras). NUNCA los inventes ni los deduzcas de la foto: la regla es
+no agregar a la imagen nada que el usuario no pidió. Si no escribió ninguno, lista vacía.
+
+Eventos: "textosExactos" debe incluir siempre el nombre del evento, la fecha, la hora y el lugar
+si el usuario los dio (el lugar tal cual lo escribió), además de datos clave como "Entrada gratis".
 
 Sobre "incluirContacto" e "incluirMarca": solo aplican si el mensaje indica que el usuario eligió
 un ADN de marca. "incluirMarca" = que la imagen muestre la marca (su logo, o su nombre si no hay
@@ -208,13 +210,13 @@ function getClient(): GoogleGenAI {
 export interface ClassifyOptions {
   categoryHint?: Category;
   brandContext?: BrandContext;
-  referenceImage?: ReferenceImage;
+  referenceImages?: ReferenceImage[];
   allowQuestions?: boolean;
 }
 
 export async function classifyPrompt(
   userPrompt: string,
-  { categoryHint, brandContext, referenceImage, allowQuestions = true }: ClassifyOptions = {}
+  { categoryHint, brandContext, referenceImages = [], allowQuestions = true }: ClassifyOptions = {}
 ): Promise<ClassificationResult> {
   const ai = getClient();
 
@@ -232,8 +234,12 @@ export async function classifyPrompt(
       `El usuario eligió el ADN de marca "${brandContext.brandName}"${available ? `, que tiene ${available}` : " (sin logo ni contacto)"}.`
     );
   }
-  if (referenceImage) {
+  if (referenceImages.length === 1) {
     contextLines.push("El usuario adjuntó una imagen de referencia (incluida abajo).");
+  } else if (referenceImages.length > 1) {
+    contextLines.push(
+      `El usuario adjuntó ${referenceImages.length} imágenes de referencia (incluidas abajo, en orden).`
+    );
   }
   if (!allowQuestions) {
     contextLines.push(
@@ -245,6 +251,41 @@ export async function classifyPrompt(
     ? `${contextLines.join("\n")}\n\nPedido: ${userPrompt}`
     : userPrompt;
 
+  // El modelo rápido a veces devuelve JSON "roto" (ej. todo su razonamiento
+  // metido dentro de "titulo"): en ese caso se descarta y se pide de nuevo.
+  let parsed: ClassificationResult | undefined;
+  for (let attempt = 1; attempt <= 2 && !parsed; attempt++) {
+    const raw = await requestClassification(ai, contentText, referenceImages);
+    try {
+      const candidate = JSON.parse(raw) as ClassificationResult;
+      if (!looksBroken(candidate)) parsed = candidate;
+    } catch {
+      // JSON inválido: se reintenta.
+    }
+  }
+  if (!parsed) {
+    throw new Error("El clasificador devolvió una respuesta inválida.");
+  }
+
+  return sanitizeClassification(parsed, userPrompt);
+}
+
+const SHORT_FIELDS = ["titulo", "fecha", "hora", "lugar", "estilo"] as const;
+const SCHEMA_FIELD_NAMES = /necesitaAclaracion|textosExactos|incluirMarca|incluirContacto|preguntas\s*:/;
+
+function looksBroken(result: ClassificationResult): boolean {
+  if (!result || typeof result !== "object") return true;
+  return SHORT_FIELDS.some((field) => {
+    const value = result[field];
+    return typeof value === "string" && (value.length > 150 || SCHEMA_FIELD_NAMES.test(value));
+  });
+}
+
+async function requestClassification(
+  ai: GoogleGenAI,
+  contentText: string,
+  referenceImages: ReferenceImage[]
+): Promise<string> {
   let response;
   try {
     // Reintenta en silencio ante cuota momentánea (429) o servidor ocupado
@@ -257,9 +298,9 @@ export async function classifyPrompt(
             role: "user",
             parts: [
               { text: contentText },
-              ...(referenceImage
-                ? [{ inlineData: { mimeType: referenceImage.mimeType, data: referenceImage.base64 } }]
-                : []),
+              ...referenceImages.map((img) => ({
+                inlineData: { mimeType: img.mimeType, data: img.base64 },
+              })),
             ],
           },
         ],
@@ -268,12 +309,15 @@ export async function classifyPrompt(
           responseMimeType: "application/json",
           responseSchema: RESPONSE_SCHEMA,
           thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-          abortSignal: AbortSignal.timeout(15_000),
+          abortSignal: AbortSignal.timeout(12_000),
         },
-      })
+      }),
+      // Picos de latencia de la API: un segundo intento suele responder en
+      // 1-2 s, así que también se reintenta cuando un intento expira.
+      { maxAttempts: 2, isRetryable: (e) => defaultIsRetryable(e) || isTimeoutError(e) }
     );
   } catch (err) {
-    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+    if (isTimeoutError(err)) {
       throw new Error("El clasificador tardó demasiado en responder. Intenta de nuevo.");
     }
     throw err;
@@ -283,14 +327,10 @@ export async function classifyPrompt(
   if (!raw) {
     throw new Error("El clasificador no devolvió respuesta.");
   }
+  return raw;
+}
 
-  let parsed: ClassificationResult;
-  try {
-    parsed = JSON.parse(raw) as ClassificationResult;
-  } catch {
-    throw new Error("El clasificador devolvió una respuesta inválida.");
-  }
-
+function sanitizeClassification(parsed: ClassificationResult, userPrompt: string): ClassificationResult {
   if (!CATEGORIES.includes(parsed.categoria)) {
     parsed.categoria = "general";
   }

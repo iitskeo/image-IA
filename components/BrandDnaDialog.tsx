@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import type { BrandDnaDictionary } from "@/lib/brand-dna-i18n";
 import {
@@ -9,6 +9,7 @@ import {
   type BrandDnaMode,
 } from "@/lib/brand-dna";
 import { extractDominantColors } from "@/lib/image-client";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import {
   ChevronLeftIcon,
   DnaIcon,
@@ -65,6 +66,7 @@ export function BrandDnaDialog({
   const [tone, setTone] = useState("");
   const [audience, setAudience] = useState("");
   const [styleNotes, setStyleNotes] = useState("");
+  const [typography, setTypography] = useState("");
   const [logoImage, setLogoImage] = useState<string | undefined>(undefined);
   const [contactPhone, setContactPhone] = useState("");
   const [contactWebsite, setContactWebsite] = useState("");
@@ -73,19 +75,20 @@ export function BrandDnaDialog({
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = view === "edit";
-  const colorInputRef = useRef<HTMLInputElement>(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   // Cerrar con click afuera es fácil de disparar sin querer y perdía lo que
   // se estaba editando/creando — se quitó ese cierre y en su lugar solo Esc
-  // (o los botones explícitos) cierran el diálogo.
+  // (o los botones explícitos) cierran el diálogo. Con el selector de color
+  // abierto, Esc cierra solo el selector.
   useEffect(() => {
-    if (!open) return;
+    if (!open || colorPickerOpen) return;
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, colorPickerOpen]);
 
   function resetForm() {
     setMode("automatico");
@@ -97,6 +100,7 @@ export function BrandDnaDialog({
     setTone("");
     setAudience("");
     setStyleNotes("");
+    setTypography("");
     setLogoImage(undefined);
     setContactPhone("");
     setContactWebsite("");
@@ -121,6 +125,7 @@ export function BrandDnaDialog({
     setTone(profile.tone ?? "");
     setAudience(profile.audience ?? "");
     setStyleNotes(profile.styleNotes ?? "");
+    setTypography(profile.typography ?? "");
     setLogoImage(profile.logoImage);
     setContactPhone(profile.contactPhone ?? "");
     setContactWebsite(profile.contactWebsite ?? "");
@@ -131,33 +136,14 @@ export function BrandDnaDialog({
     setView("edit");
   }
 
-  const addColor = useCallback((hex: string) => {
+  function confirmColor(hex: string) {
     setColors((prev) => (prev.includes(hex) ? prev : [...prev, hex].slice(0, 10)));
-  }, []);
+    setColorPickerOpen(false);
+  }
 
   function removeColor(index: number) {
     setColors((prev) => prev.filter((_, i) => i !== index));
   }
-
-  // El input nativo type="color" dispara el evento "input" (y por lo tanto
-  // React onChange) en cada frame mientras el usuario arrastra el cursor
-  // dentro del selector — usar eso aquí llenaba la fila de colores con cada
-  // posición intermedia. El evento nativo "change" solo dispara una vez,
-  // cuando el usuario confirma/cierra el selector, así que lo escuchamos
-  // directo en el DOM en vez de usar onChange.
-  // El diálogo completo queda montado todo el tiempo (solo alterna
-  // `open`/`view`), así que este input no existe todavía en el primer
-  // render — sin `view` en las dependencias, el ref seguiría siendo null
-  // para siempre y el listener nunca se conectaría.
-  useEffect(() => {
-    const node = colorInputRef.current;
-    if (!node) return;
-    function handleChange(e: Event) {
-      addColor((e.target as HTMLInputElement).value);
-    }
-    node.addEventListener("change", handleChange);
-    return () => node.removeEventListener("change", handleChange);
-  }, [addColor, view]);
 
   async function handleLogoFile(file: File) {
     if (!file.type.startsWith("image/")) return;
@@ -250,10 +236,14 @@ export function BrandDnaDialog({
 
     let inferredAudience: string | undefined;
     let inferredStyleNotes: string | undefined;
+    let inferredTypography: string | undefined;
 
     // Al editar, los campos ya son visibles y editables a mano — no tiene
     // sentido volver a inferirlos y pisar una corrección manual del usuario.
-    if (mode === "automatico" && !isEditing) {
+    // En modo manual solo se infiere la tipografía, si subió imágenes y no la escribió.
+    const shouldInfer =
+      !isEditing && (mode === "automatico" || (images.length > 0 && !typography.trim()));
+    if (shouldInfer) {
       try {
         const formData = new FormData();
         formData.set("whatTheyDo", whatTheyDo.trim());
@@ -267,6 +257,7 @@ export function BrandDnaDialog({
         const data = await res.json();
         inferredAudience = data.audience;
         inferredStyleNotes = data.styleNotes;
+        inferredTypography = data.typography;
       } catch {
         // Blindaje: si la inferencia falla, se guarda igual sin esos campos.
       }
@@ -284,6 +275,7 @@ export function BrandDnaDialog({
       tone: tone.trim() || undefined,
       audience: showExtraFields ? audience.trim() || undefined : inferredAudience,
       styleNotes: showExtraFields ? styleNotes.trim() || undefined : inferredStyleNotes,
+      typography: typography.trim() || inferredTypography,
       logoImage: showExtraFields ? logoImage : undefined,
       contactPhone: showExtraFields ? contactPhone.trim() || undefined : undefined,
       contactWebsite: showExtraFields ? contactWebsite.trim() || undefined : undefined,
@@ -539,16 +531,33 @@ export function BrandDnaDialog({
                       </button>
                     </div>
                   ))}
-                  <label
+                  <button
+                    type="button"
+                    onClick={() => setColorPickerOpen(true)}
                     aria-label={t.addColor}
                     title={t.addColor}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-dashed border-line text-foreground/40 hover:bg-surface-2 hover:text-foreground"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-line text-foreground/40 hover:bg-surface-2 hover:text-foreground"
                   >
                     <PlusIcon className="h-3.5 w-3.5" />
-                    <input ref={colorInputRef} type="color" defaultValue="#000000" className="hidden" />
-                  </label>
+                  </button>
                 </div>
               </div>
+
+              {colorPickerOpen && (
+                <ColorPickerPopover
+                  initialColor={colors[colors.length - 1]}
+                  onConfirm={confirmColor}
+                  onCancel={() => setColorPickerOpen(false)}
+                  labels={{
+                    title: t.pickerTitle,
+                    hue: t.pickerHue,
+                    saturation: t.pickerSaturation,
+                    lightness: t.pickerLightness,
+                    cancel: t.cancel,
+                    confirm: t.addColor,
+                  }}
+                />
+              )}
 
               <label className="flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-foreground/80">{t.q1}</span>
@@ -594,6 +603,19 @@ export function BrandDnaDialog({
                       maxLength={300}
                       className={`resize-none ${fieldClass}`}
                     />
+                  </label>
+
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-medium text-foreground/80">{t.typographyLabel}</span>
+                    <input
+                      type="text"
+                      value={typography}
+                      onChange={(e) => setTypography(e.target.value)}
+                      placeholder={t.typographyPlaceholder}
+                      maxLength={150}
+                      className={fieldClass}
+                    />
+                    <span className="text-xs text-foreground/40">{t.typographyHelp}</span>
                   </label>
 
                   <div className="flex flex-col gap-2">

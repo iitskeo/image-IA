@@ -10,6 +10,7 @@ export interface BrandDna {
   tone?: string;
   audience?: string;
   styleNotes?: string;
+  typography?: string; // estilo tipográfico de la marca (detectado de sus imágenes o escrito a mano)
   logoImage?: string; // data URL, ya redimensionado/comprimido en el cliente
   contactPhone?: string;
   contactWebsite?: string;
@@ -86,6 +87,7 @@ export function sanitizeBrandDna(raw: unknown): BrandDna | undefined {
     tone: sanitizeText(obj.tone),
     audience: sanitizeText(obj.audience),
     styleNotes: sanitizeText(obj.styleNotes),
+    typography: sanitizeText(obj.typography),
     logoImage: sanitizeLogoImage(obj.logoImage),
     contactPhone: sanitizeText(obj.contactPhone),
     contactWebsite: sanitizeText(obj.contactWebsite),
@@ -99,6 +101,7 @@ export function sanitizeBrandDna(raw: unknown): BrandDna | undefined {
     sanitized.tone ||
     sanitized.audience ||
     sanitized.styleNotes ||
+    sanitized.typography ||
     sanitized.logoImage ||
     sanitized.contactPhone ||
     sanitized.contactWebsite ||

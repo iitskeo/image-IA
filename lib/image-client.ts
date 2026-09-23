@@ -65,7 +65,9 @@ export async function extractDominantColors(files: File[], count = 5): Promise<s
 }
 
 const REFERENCE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const REFERENCE_MAX_BYTES = 4.5 * 1024 * 1024; // margen bajo el límite de 5MB del servidor
+// Con hasta 3 referencias por pedido, cada una se mantiene ≤3MB para que el
+// total (en base64) quede holgado bajo el límite de ~20MB de Gemini.
+const REFERENCE_MAX_BYTES = 3 * 1024 * 1024;
 const REFERENCE_MAX_DIMENSION = 2048;
 
 // Capturas pegadas (PNG enormes) o fotos de celular suelen pasar el límite

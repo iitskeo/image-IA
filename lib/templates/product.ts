@@ -14,6 +14,7 @@ export function buildProductPrompt({
   userPrompt,
   classification,
   hasReferenceImage,
+  referenceCount,
   logoAttached,
   aspectRatio,
   brandDna,
@@ -28,7 +29,7 @@ export function buildProductPrompt({
   return `Create a high-end e-commerce / product photography style image.
 
 Brief from the user (source of truth for content): "${userPrompt}"${details}${formatExactTexts(textosExactos)}
-Summary: ${resumen}${formatAttachments(hasReferenceImage, logoAttached)}
+Summary: ${resumen}${formatAttachments(referenceCount, logoAttached)}
 
 Design requirements:
 - Studio-quality lighting with realistic soft shadows and reflections appropriate to the surface.

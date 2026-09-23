@@ -6,6 +6,7 @@ export interface TemplateInput {
   userPrompt: string;
   classification: ClassificationResult;
   hasReferenceImage: boolean;
+  referenceCount: number;
   logoAttached: boolean;
   aspectRatio: AspectRatio;
   brandDna?: BrandDna;

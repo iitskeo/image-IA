@@ -13,6 +13,10 @@ export const MIN_PROMPT_LENGTH = 1;
 
 export const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+// Varias referencias ayudan (ej. varias fotos de la misma persona, o producto
+// + escena). El total en base64 debe quedar holgado bajo el límite de ~20MB
+// por petición de Gemini, por eso el navegador además las recomprime.
+export const MAX_REFERENCE_IMAGES = 3;
 
 // Filtro superficial de defensa en profundidad. La barrera principal de
 // seguridad de contenido son los safety settings nativos de la API de Gemini;

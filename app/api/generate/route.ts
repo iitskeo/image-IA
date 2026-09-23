@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { classifyPrompt, MAX_CLARIFICATION_ROUNDS, CATEGORIES, type Category } from "@/lib/classifier";
+import {
+  classifyPrompt,
+  MAX_CLARIFICATION_ROUNDS,
+  CATEGORIES,
+  type Category,
+  type ClassificationResult,
+} from "@/lib/classifier";
 import { buildPromptForCategory } from "@/lib/templates";
 import {
   ImageRefusedError,
@@ -15,11 +21,40 @@ import {
   ValidationError,
   validatePrompt,
   validateReferenceImageFile,
+  MAX_REFERENCE_IMAGES,
 } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
 const provider: ImageProvider = new GeminiNanoBananaProvider();
+
+function normalizeForCompare(text: string): string {
+  return text.toLocaleLowerCase("es").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ");
+}
+
+// Red de seguridad en código: un póster de evento sin fecha o lugar no sirve,
+// así que si el clasificador omitió alguno de sus datos clave, se agrega.
+// Y una promoción nunca sale sin ningún texto.
+function ensureKeyTexts(classification: ClassificationResult, isPromo: boolean): string[] {
+  const texts = [...(classification.textosExactos ?? [])];
+  const has = (value: string) =>
+    texts.some((t) => normalizeForCompare(t).includes(normalizeForCompare(value)));
+  // Solo valores cortos y limpios: nunca volcar un campo "roto" en la imagen.
+  const clean = (value: string | undefined) => {
+    const trimmed = value?.trim();
+    return trimmed && trimmed.length <= 80 ? trimmed : undefined;
+  };
+
+  if (classification.categoria === "poster_evento") {
+    for (const value of [classification.titulo, classification.fecha, classification.hora, classification.lugar]) {
+      const safe = clean(value);
+      if (safe && !has(safe)) texts.push(safe);
+    }
+  }
+  const title = clean(classification.titulo);
+  if (isPromo && texts.length === 0 && title) texts.push(title);
+  return texts;
+}
 
 function parseDataUrl(dataUrl: string | undefined): ReferenceImage | undefined {
   const match = dataUrl?.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/);
@@ -51,16 +86,17 @@ export async function POST(request: Request) {
   try {
     const prompt = validatePrompt(formData.get("prompt"));
 
-    const referenceFile = formData.get("referenceImage");
-    let referenceImage: { base64: string; mimeType: string } | undefined;
-
-    if (referenceFile instanceof File && referenceFile.size > 0) {
-      validateReferenceImageFile(referenceFile);
-      const bytes = await referenceFile.arrayBuffer();
-      referenceImage = {
-        base64: Buffer.from(bytes).toString("base64"),
-        mimeType: referenceFile.type,
-      };
+    const referenceFiles = formData
+      .getAll("referenceImage")
+      .filter((f): f is File => f instanceof File && f.size > 0);
+    if (referenceFiles.length > MAX_REFERENCE_IMAGES) {
+      throw new ValidationError(`Puedes adjuntar hasta ${MAX_REFERENCE_IMAGES} imágenes de referencia.`);
+    }
+    const referenceImages: ReferenceImage[] = [];
+    for (const file of referenceFiles) {
+      validateReferenceImageFile(file);
+      const bytes = await file.arrayBuffer();
+      referenceImages.push({ base64: Buffer.from(bytes).toString("base64"), mimeType: file.type });
     }
 
     const round = Number(formData.get("clarificationRound") ?? 0);
@@ -89,7 +125,7 @@ export async function POST(request: Request) {
     const classification = await classifyPrompt(prompt, {
       categoryHint,
       allowQuestions: canAskQuestions,
-      referenceImage,
+      referenceImages,
       brandContext: brandDna
         ? {
             brandName: brandDna.name,
@@ -121,9 +157,11 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(" · ");
     const socialHandle = showBrand ? socialHandleFromLink(brandDna?.socialLink) : undefined;
+    const isPromo = classification.categoria === "poster_evento" || classification.categoria === "post_redes";
     const textPlan: TextPlan = {
-      main: isPortrait ? [] : classification.textosExactos ?? [],
-      bullets: isPortrait ? [] : classification.beneficios ?? [],
+      main: isPortrait ? [] : ensureKeyTexts(classification, isPromo),
+      // Beneficios solo en piezas promocionales — nunca en fotos de catálogo.
+      bullets: isPromo ? classification.beneficios ?? [] : [],
       footer: [
         ...(showBrand && !logoImage && brandDna?.name ? [brandDna.name] : []),
         ...(socialHandle ? [socialHandle] : []),
@@ -134,8 +172,9 @@ export async function POST(request: Request) {
 
     const guidelines = buildPromptForCategory(classification.categoria, {
       userPrompt: prompt,
-      classification,
-      hasReferenceImage: Boolean(referenceImage),
+      classification: { ...classification, textosExactos: textPlan.main },
+      hasReferenceImage: referenceImages.length > 0,
+      referenceCount: referenceImages.length,
       logoAttached: Boolean(logoImage),
       aspectRatio,
       brandDna,
@@ -143,7 +182,8 @@ export async function POST(request: Request) {
 
     const direction = await directArt(guidelines, textPlan);
     const finalPrompt =
-      direction.prompt + buildTextLock(allowedTexts, Boolean(referenceImage), Boolean(logoImage));
+      direction.prompt +
+      buildTextLock(allowedTexts, referenceImages.length > 0 && !isPortrait, Boolean(logoImage));
 
     console.info(`[director de arte] categoría=${classification.categoria} receta=${direction.style ?? "plantilla"}`);
     if (process.env.NODE_ENV !== "production") {
@@ -157,12 +197,13 @@ export async function POST(request: Request) {
         dryRun: true,
         classification,
         style: direction.style,
+        textPlan,
         logoAttached: Boolean(logoImage),
         finalPrompt,
       });
     }
 
-    const images = [referenceImage, logoImage].filter((img): img is ReferenceImage => Boolean(img));
+    const images = logoImage ? [...referenceImages, logoImage] : referenceImages;
 
     // La proporción se asegura en el navegador (lib/image-client.ts), porque
     // Workers no puede usar librerías nativas de imagen como sharp.

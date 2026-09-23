@@ -14,6 +14,7 @@ export function buildPosterPrompt({
   userPrompt,
   classification,
   hasReferenceImage,
+  referenceCount,
   logoAttached,
   aspectRatio,
   brandDna,
@@ -31,7 +32,7 @@ export function buildPosterPrompt({
   return `Design a high-quality, print-ready promotional poster/flyer.
 
 Brief from the user (source of truth for content): "${userPrompt}"${details}${formatExactTexts(textosExactos)}
-Summary: ${resumen}${formatAttachments(hasReferenceImage, logoAttached)}
+Summary: ${resumen}${formatAttachments(referenceCount, logoAttached)}
 
 Design requirements:
 - Clear visual hierarchy: the main headline largest and most prominent, then the key info (date/time/place, or price/offer) clearly legible as secondary text.

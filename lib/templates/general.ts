@@ -14,6 +14,7 @@ export function buildGeneralPrompt({
   userPrompt,
   classification,
   hasReferenceImage,
+  referenceCount,
   logoAttached,
   aspectRatio,
   brandDna,
@@ -25,7 +26,7 @@ export function buildGeneralPrompt({
   return `Create a high-quality, professional image based on this brief.
 
 Brief from the user (source of truth for content): "${userPrompt}"${details}${formatExactTexts(textosExactos)}
-Summary: ${resumen}${formatAttachments(hasReferenceImage, logoAttached)}
+Summary: ${resumen}${formatAttachments(referenceCount, logoAttached)}
 
 Design requirements:
 - Thoughtful composition with a clear focal point and purposeful use of space.

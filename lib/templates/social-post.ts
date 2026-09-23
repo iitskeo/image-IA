@@ -14,6 +14,7 @@ export function buildSocialPostPrompt({
   userPrompt,
   classification,
   hasReferenceImage,
+  referenceCount,
   logoAttached,
   aspectRatio,
   brandDna,
@@ -28,7 +29,7 @@ export function buildSocialPostPrompt({
   return `Design a scroll-stopping social media graphic.
 
 Brief from the user (source of truth for content): "${userPrompt}"${details}${formatExactTexts(textosExactos)}
-Summary: ${resumen}${formatAttachments(hasReferenceImage, logoAttached)}
+Summary: ${resumen}${formatAttachments(referenceCount, logoAttached)}
 
 Design requirements:
 - One clear focal point — don't cram multiple competing messages into the frame.

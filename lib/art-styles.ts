@@ -14,6 +14,14 @@ export interface ArtStyle {
 
 export const ART_STYLES: ArtStyle[] = [
   {
+    id: "ecommerce_catalog",
+    useFor:
+      "Plain product/catalog photos (e-commerce, marketplace, 'foto de producto', 'fondo blanco'), with no promotional message.",
+    photography:
+      "Professional e-commerce packshot: the product alone, centered and upright, filling about 70-80% of the frame, on a pure white (#FFFFFF-level white) seamless background with even, soft, shadowless-looking lighting, true-to-life colors and a very subtle natural contact shadow under it. Tack-sharp focus on the whole product.",
+    design: "No graphic layer and no text at all.",
+  },
+  {
     id: "minimal_product_poster",
     useFor: "Default for promoting a physical product (new launch, offer, stock alert).",
     photography:
@@ -57,7 +65,7 @@ export const ART_STYLES: ArtStyle[] = [
     id: "editorial_portrait",
     useFor: "Portraits, avatars, people-centered images without a product.",
     photography:
-      "Editorial portrait photography: natural expression, real skin texture, flattering soft key light with gentle falloff, cinematic color grade, background with depth.",
+      "Editorial portrait photography: the person's own expression and features exactly as in their reference photo, real skin texture, soft key light with gentle falloff, natural color grade, background with depth.",
     design: "No graphic layer unless the text list asks for it.",
   },
 ];
