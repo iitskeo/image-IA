@@ -68,6 +68,24 @@ export const ART_STYLES: ArtStyle[] = [
       "Editorial portrait photography: the person's own expression and features exactly as in their reference photo, real skin texture, soft key light with gentle falloff, natural color grade, background with depth.",
     design: "No graphic layer unless the text list asks for it.",
   },
+  {
+    id: "service_business_promo",
+    useFor:
+      "Services or businesses without a physical product to shoot (salons, gyms, clinics, studios, consulting, classes, local businesses) where a real depictable scene exists.",
+    photography:
+      "Authentic lifestyle/editorial photography of the service or experience itself: a person genuinely receiving or enjoying it, the space/ambiance, or a moment from the activity (e.g. a stylist at work, a workout mid-motion, a class in session). Natural light, real texture, candid framing — never a staged product-on-a-pedestal shot, never stock-photo posing.",
+    design:
+      "Clean editorial poster layout: a confident headline in the upper or lower third over calm areas of the photo, small supporting details in letter-spaced caps, generous negative space. No decorative frames, badges or icons.",
+  },
+  {
+    id: "minimal_announcement",
+    useFor:
+      "Pure announcements with no product and no depictable real-world scene (a webinar, a seasonal promotion, a class or sale with nothing physical to photograph).",
+    photography:
+      "No photographic subject — a designed background instead: a rich, coherent color field or subtle gradient/texture built from the brand or brief's palette (paper grain, soft studio-light falloff, or a minimal abstract backdrop). Never invent a fake product, person or scene the brief didn't ask for.",
+    design:
+      "Bold graphic-design poster, closer to a Swiss/editorial print piece than a photo: strong typographic hierarchy carries the piece (large headline, clear secondary info block), restrained use of one or two accent shapes or rules at most, generous margins.",
+  },
 ];
 
 export const ART_STYLE_IDS = ART_STYLES.map((s) => s.id);

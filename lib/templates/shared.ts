@@ -1,6 +1,7 @@
 import type { BrandDna } from "../brand-dna";
 import type { AspectRatio } from "../aspect-ratio";
 import { findBrandFont } from "../brand-fonts";
+import { namedBrandPalette } from "../color-name";
 
 const ASPECT_RATIO_DESCRIPTIONS: Record<AspectRatio, string> = {
   "1:1": "1:1 square (e.g. Instagram feed post)",
@@ -108,14 +109,16 @@ export function formatBrandDna(
     );
   }
   if (brandDna.colors.length) {
-    // Sin esta aclaración el modelo llegó a "dibujar" los códigos hex y
-    // muestras de color como si fueran parte del diseño.
+    // El nombre descriptivo (ej. "deep teal green") va entre paréntesis junto
+    // al hex para que el director de arte cite el MISMO nombre en vez de
+    // adivinar uno distinto por su cuenta — sin esta aclaración el modelo
+    // también llegó a "dibujar" los códigos hex como si fueran parte del diseño.
     lines.push(
-      `- Brand color palette (use these as the dominant colors of the design): ${brandDna.colors.join(", ")}. These codes are only a color reference — NEVER render hex codes, color names, color swatches or a palette legend in the image.`
+      `- Brand color palette (use these as the dominant colors of the design, referring to them by the descriptive name given in parentheses): ${namedBrandPalette(brandDna.colors)}. The hex codes are only a reference — NEVER render hex codes, color swatches or a palette legend in the image.`
     );
   }
 
   if (!lines.length) return "";
 
-  return `\n\nBrand DNA context (apply these brand guidelines to the design, without breaking the core design requirements above):\n${lines.join("\n")}`;
+  return `\n\nBrand DNA context — REQUIRED identity layer, not optional flavor. The final design must visibly read as belonging to this specific brand, not a generic piece that happens to mention it:\n${lines.join("\n")}`;
 }

@@ -199,7 +199,7 @@ export async function POST(request: Request) {
       brandDna,
     });
 
-    const direction = await directArt(guidelines, textPlan);
+    const direction = await directArt(guidelines, textPlan, classification.categoria, referenceImages.length > 0);
     const finalPrompt =
       direction.prompt +
       buildTextLock(allowedTexts, referenceImages.length > 0 && !isPortrait, Boolean(logoImage));

@@ -1,6 +1,9 @@
 import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { withRetry } from "./retry";
 import { ART_STYLE_IDS, formatArtStyleLibrary } from "./art-styles";
+import type { Category } from "./categories";
+
+const PRODUCT_RECIPE_IDS = ["ecommerce_catalog", "minimal_product_poster", "luxury_campaign", "bold_streetwear"];
 
 // Paso de "director de arte": convierte las pautas compiladas por nuestras
 // plantillas (reglas de diseño + ADN + textos exactos) en UN prompt final
@@ -17,13 +20,16 @@ STEP 1 — Choose the art-direction recipe from this library that best fits the 
 
 ${formatArtStyleLibrary()}
 
+The brief starts with "Category:" and "Reference image attached:" lines stating the classified category and whether the user attached a real reference photo. If the category is "poster_evento" or "post_redes" AND no reference image is attached, this means there is no real physical product to photograph — do NOT pick ${PRODUCT_RECIPE_IDS.join(", ")} unless the brief explicitly and literally describes a physical product being sold (a bottle, a device, packaging, etc.). For a service, business, class, party or generic promotion with no literal product, choose whichever of night_event_editorial, food_editorial, service_business_promo or minimal_announcement best fits the brief's actual content instead — never fall back to a product recipe just because it's labeled "default".
+
 STEP 2 — Adapt the recipe to the subject (its theme, audience, mood). The user's explicit requests ALWAYS override the recipe defaults (e.g. "fondo blanco" means a pure white background even if the recipe says dark). LESS IS MORE: premium means restraint. Never add anything the user didn't ask for — no extra elements, props, text or decorative details (hairline rules, accent bars, frames, glows, background motifs, badges). A clean hero, strong typography and great light beat any amount of decoration.
+If the brief has a "Brand DNA context" section, this is not optional flavor — it's the identity the whole piece must serve. Concretely: the color palette you write in STEP 3.4 MUST use the brand's own color names (given in parentheses next to each hex in the brief) rather than inventing different ones, the backdrop/lighting/props should lean into the brand's tone and what it sells/does, and if a brand typeface is given it must be the typeface you describe in STEP 3.4. A design that ignores these and could belong to any random brand is a failure.
 
 STEP 3 — Write ONE prompt in English, 150-250 words, in this order:
 1. Photography layer: backdrop, surface, lighting setup, camera/lens, atmosphere — a real professional shoot with physically accurate reflections and shadows and subtle film grain.
-2. Hero: what the hero is, its scale and exact position in the frame. It must be instantly clear (people dancing for a dance event, the product for a product promo). One hero only — no collages, abstract filler or stock scenes.
+2. Hero: what the hero is, its scale and exact position in the frame. It must be instantly clear (people dancing for a dance event, the product for a product promo, a person genuinely receiving a service for a business/service promo, or — when the brief has no depictable scene at all — a strong typographic composition with no photographic subject). One hero only — no collages, abstract filler or stock scenes.
 3. Design layer: only what the recipe calls for, with the exact zone of each text block (e.g. "headline top-left in the upper 25%"). Text zones must NEVER overlap or touch the hero — keep clear space around it.
-4. Typography (max two styles, described concretely) and the color palette in words. NEVER write hex codes, color codes or swatches.
+4. Typography (max two styles, described concretely) and the color palette in words — if the brief gives brand color names, use those exact names. NEVER write hex codes, color codes or swatches.
 Convey quality ONLY through concrete visual choices (lighting, lens, materials, texture). Never add abstract quality or summary phrases such as "premium", "meticulously crafted", "campaign poster", "hero photograph" or "high quality" — image models tend to render those as captions. End the prompt with the typography/color sentence, not with a summary. The only words in double quotes are the on-image texts.
 Avoid anything that screams AI or template: props or bases the concept doesn't need (boards, pedestals, crates, plants), stock collages, random badges, emoji-like icons, stickers, caution tape, glossy plastic skin, oversaturated gradients, fake UI.
 
@@ -102,8 +108,13 @@ function formatTextPlan(plan: TextPlan): string {
     .join("\n");
 }
 
-export async function directArt(guidelines: string, plan: TextPlan): Promise<ArtDirection> {
-  const brief = `${guidelines}\n\nFINAL on-image text list:\n${formatTextPlan(plan)}`;
+export async function directArt(
+  guidelines: string,
+  plan: TextPlan,
+  category: Category,
+  hasReferenceImage: boolean
+): Promise<ArtDirection> {
+  const brief = `Category: ${category}\nReference image attached: ${hasReferenceImage ? "yes" : "no"}\n\n${guidelines}\n\nFINAL on-image text list:\n${formatTextPlan(plan)}`;
 
   try {
     const ai = getClient();
