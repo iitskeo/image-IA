@@ -38,6 +38,7 @@ export interface Dictionary {
   editPlaceholder: string;
   editOriginal: string;
   editSend: string;
+  editFormatOnly: string;
   categories: Record<string, string>;
   aspectRatios: Record<string, string>;
 }
@@ -82,6 +83,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "¿Qué quieres cambiar en esta imagen?",
     editOriginal: "Versión original",
     editSend: "Enviar cambio",
+    editFormatOnly: "Cambiar el formato a {format}",
     categories: {
       poster_evento: "Poster de evento",
       post_redes: "Post para redes",
@@ -136,6 +138,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "What do you want to change in this image?",
     editOriginal: "Original version",
     editSend: "Send edit",
+    editFormatOnly: "Change the format to {format}",
     categories: {
       poster_evento: "Event poster",
       post_redes: "Social media post",
@@ -190,6 +193,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "O que você quer mudar nesta imagem?",
     editOriginal: "Versão original",
     editSend: "Enviar edição",
+    editFormatOnly: "Mudar o formato para {format}",
     categories: {
       poster_evento: "Pôster de evento",
       post_redes: "Post para redes sociais",
@@ -244,6 +248,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "Que veux-tu changer dans cette image ?",
     editOriginal: "Version originale",
     editSend: "Envoyer la modification",
+    editFormatOnly: "Changer le format en {format}",
     categories: {
       poster_evento: "Affiche d'événement",
       post_redes: "Publication réseaux sociaux",
@@ -298,6 +303,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "Was möchtest du an diesem Bild ändern?",
     editOriginal: "Originalversion",
     editSend: "Änderung senden",
+    editFormatOnly: "Format zu {format} ändern",
     categories: {
       poster_evento: "Veranstaltungsplakat",
       post_redes: "Social-Media-Beitrag",
@@ -352,6 +358,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "Cosa vuoi cambiare in questa immagine?",
     editOriginal: "Versione originale",
     editSend: "Invia modifica",
+    editFormatOnly: "Cambia il formato in {format}",
     categories: {
       poster_evento: "Poster evento",
       post_redes: "Post social",
@@ -406,6 +413,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "Что вы хотите изменить на этом изображении?",
     editOriginal: "Исходная версия",
     editSend: "Отправить изменение",
+    editFormatOnly: "Изменить формат на {format}",
     categories: {
       poster_evento: "Постер мероприятия",
       post_redes: "Пост для соцсетей",
@@ -459,6 +467,7 @@ export const DICTIONARIES: Record<Locale, Dictionary> = {
     editPlaceholder: "您想更改这张图片的什么内容？",
     editOriginal: "原始版本",
     editSend: "发送修改",
+    editFormatOnly: "将格式改为{format}",
     categories: {
       poster_evento: "活动海报",
       post_redes: "社交媒体帖子",
