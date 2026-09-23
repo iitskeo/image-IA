@@ -1,6 +1,7 @@
 import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { CATEGORIES, type Category } from "./categories";
 import { withRetry } from "./retry";
+import type { ReferenceImage } from "./providers/image-provider";
 
 export { CATEGORIES, type Category };
 
@@ -17,8 +18,9 @@ export interface ClassificationResult {
   hora?: string;
   lugar?: string;
   estilo?: string;
+  textosExactos?: string[];
   incluirContacto?: boolean;
-  incluirLogo?: boolean;
+  incluirMarca?: boolean;
   necesitaAclaracion?: boolean;
   preguntas?: ClarificationQuestion[];
 }
@@ -26,6 +28,7 @@ export interface ClassificationResult {
 // Qué tiene disponible el ADN de marca elegido, para que el clasificador
 // decida (o pregunte) si corresponde usarlo en ESTA imagen concreta.
 export interface BrandContext {
+  brandName: string;
   hasContact: boolean;
   hasLogo: boolean;
 }
@@ -75,16 +78,33 @@ necesitaAclaracion=true, y haz una pregunta MÁS PUNTUAL y distinta a las anteri
 llegar al detalle concreto que falta (ej. "¿qué tipo de producto?" con opciones concretas
 como "Un perfume", "Un reloj", "Unos audífonos", "Otro").
 
-Sobre "incluirContacto" e "incluirLogo": solo aplican si el mensaje indica que el usuario eligió
-un ADN de marca con datos de contacto y/o logo. Decide si corresponde usarlos en ESTA imagen:
-- Si el usuario lo pidió explícitamente (o respondió que sí en "Detalles adicionales") → true.
+Imagen de referencia: si el usuario adjuntó una, se incluye junto al pedido. OBSÉRVALA: casi
+siempre es el producto o sujeto que quiere mostrar. Usa lo que ves (qué es, forma, colores,
+gráficos) para el "resumen" y NUNCA preguntes algo que ya se responde mirando la imagen
+(ej. "¿qué producto vendes?" si la imagen ya muestra un termo).
+
+"textosExactos": la lista de textos que deben aparecer escritos en la imagen (titular, precio,
+oferta, fecha, hora, lugar, llamado a la acción). Salen SOLO del pedido escrito por el usuario:
+nunca copies textos que aparezcan dentro de la imagen de referencia (esa imagen muestra el
+producto, no el texto a escribir). Nombres propios, precios, fechas y horas se copian EXACTAMENTE
+como los escribió el usuario (si escribió "Katanas", es "Katanas"; nunca los corrijas). El titular
+sí lo redactas tú con ortografía perfecta, corto y claro, y debe comunicar QUÉ es la pieza (ej.
+"Noche de baile" + "Cumpleaños de Jen", o "¡Últimas unidades!"), no solo un dato suelto. Sin
+relleno ni textos que el usuario no pidió. Si la imagen no lleva texto, lista vacía. Copia también
+con la ortografía exacta del usuario los campos "titulo" y "lugar".
+
+Sobre "incluirContacto" e "incluirMarca": solo aplican si el mensaje indica que el usuario eligió
+un ADN de marca. "incluirMarca" = que la imagen muestre la marca (su logo, o su nombre si no hay
+logo). Decide si corresponde usarlos en ESTA imagen:
+- Si el usuario lo pidió explícitamente (ej. "que se note que es de nuestra academia", "con
+  nuestro logo") o respondió que sí en "Detalles adicionales" → true.
 - Si pidió explícitamente que no, o respondió que no → false.
 - Retrato/avatar, fotos de producto puro o escenas sin intención promocional → false, sin preguntar.
-- Piezas promocionales (poster de evento, anuncio, promoción, post de venta) donde un pie con
-  contacto o el logo serían naturales pero el usuario no dijo nada → pregunta (necesitaAclaracion=true)
-  con una pregunta concreta, ej. "¿Incluimos tus datos de contacto en la imagen?" con opciones
-  como "Sí, teléfono y web", "Solo la web", "No". Si hay contacto y logo, puedes preguntar ambos
-  en una sola pregunta. Esta pregunta cuenta dentro del máximo de 2 preguntas.
+- Piezas promocionales de la propia marca (poster, anuncio, promoción, post de venta) → incluirMarca
+  true por defecto. Para el contacto, si el ADN tiene contacto y el usuario no dijo nada, pregunta
+  (necesitaAclaracion=true) con una pregunta concreta, ej. "¿Incluimos tus datos de contacto en la
+  imagen?" con opciones como "Sí, teléfono y web", "Solo la web", "No". Esta pregunta cuenta dentro
+  del máximo de 2 preguntas.
 - Si ya no puedes preguntar o sigue sin estar claro, usa tu mejor criterio profesional.
 
 Si necesitaAclaracion es true, incluye entre 1 y 2 preguntas breves en "preguntas", cada una
@@ -115,13 +135,19 @@ const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: "Tono o estilo visual pedido explícitamente por el usuario, si aplica.",
     },
+    textosExactos: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "Textos que deben aparecer escritos en la imagen, copiados exactamente como los escribió el usuario. Vacío si la imagen no lleva texto.",
+    },
     incluirContacto: {
       type: Type.BOOLEAN,
       description: "Si corresponde incluir los datos de contacto del ADN de marca en esta imagen.",
     },
-    incluirLogo: {
+    incluirMarca: {
       type: Type.BOOLEAN,
-      description: "Si corresponde reservar espacio para el logo del ADN de marca en esta imagen.",
+      description: "Si la imagen debe mostrar la marca del ADN (su logo, o su nombre si no tiene logo).",
     },
     necesitaAclaracion: {
       type: Type.BOOLEAN,
@@ -159,12 +185,13 @@ function getClient(): GoogleGenAI {
 export interface ClassifyOptions {
   categoryHint?: Category;
   brandContext?: BrandContext;
+  referenceImage?: ReferenceImage;
   allowQuestions?: boolean;
 }
 
 export async function classifyPrompt(
   userPrompt: string,
-  { categoryHint, brandContext, allowQuestions = true }: ClassifyOptions = {}
+  { categoryHint, brandContext, referenceImage, allowQuestions = true }: ClassifyOptions = {}
 ): Promise<ClassificationResult> {
   const ai = getClient();
 
@@ -174,11 +201,16 @@ export async function classifyPrompt(
       `Categoría sugerida por el usuario (verifícala; corrígela solo si el pedido claramente no encaja): ${categoryHint}`
     );
   }
-  if (brandContext && (brandContext.hasContact || brandContext.hasLogo)) {
+  if (brandContext) {
     const available = [brandContext.hasContact && "datos de contacto", brandContext.hasLogo && "logo"]
       .filter(Boolean)
       .join(" y ");
-    contextLines.push(`El usuario eligió un ADN de marca que tiene: ${available}.`);
+    contextLines.push(
+      `El usuario eligió el ADN de marca "${brandContext.brandName}"${available ? `, que tiene ${available}` : " (sin logo ni contacto)"}.`
+    );
+  }
+  if (referenceImage) {
+    contextLines.push("El usuario adjuntó una imagen de referencia (incluida abajo).");
   }
   if (!allowQuestions) {
     contextLines.push(
@@ -197,7 +229,17 @@ export async function classifyPrompt(
     response = await withRetry(() =>
       ai.models.generateContent({
         model: MODEL_NAME,
-        contents: [{ role: "user", parts: [{ text: contentText }] }],
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: contentText },
+              ...(referenceImage
+                ? [{ inlineData: { mimeType: referenceImage.mimeType, data: referenceImage.base64 } }]
+                : []),
+            ],
+          },
+        ],
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           responseMimeType: "application/json",
@@ -233,6 +275,15 @@ export async function classifyPrompt(
   if (typeof parsed.resumen !== "string" || !parsed.resumen.trim()) {
     parsed.resumen = userPrompt;
   }
+
+  // Blindaje: pocos textos y cortos — más texto en la imagen = más errores
+  // de ortografía del modelo de imagen.
+  parsed.textosExactos = Array.isArray(parsed.textosExactos)
+    ? parsed.textosExactos
+        .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+        .map((t) => t.trim().slice(0, 120))
+        .slice(0, 8)
+    : [];
 
   // Blindaje: descarta preguntas de aclaración mal formadas (sin texto o sin
   // opciones) en vez de dejar que rompan el render en el cliente.

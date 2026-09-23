@@ -15,9 +15,11 @@ export const PROVIDER_TIMEOUT_MS = 45_000;
 export class ImageRefusedError extends Error {}
 
 export interface ImageProvider {
+  // Las imágenes se envían en el mismo orden en que el prompt las numera
+  // ("Image 1", "Image 2"...).
   generate(
     prompt: string,
-    referenceImage?: ReferenceImage,
+    images: ReferenceImage[],
     aspectRatio?: AspectRatio
   ): Promise<{
     base64: string;

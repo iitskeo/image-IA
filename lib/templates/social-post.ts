@@ -3,18 +3,21 @@ import {
   ANTI_AI_LOOK,
   BRIEF_IS_DESCRIPTION_ONLY,
   formatAspectRatio,
+  formatAttachments,
   formatBrandDna,
   formatDetails,
+  formatExactTexts,
 } from "./shared";
 
 export function buildSocialPostPrompt({
   userPrompt,
   classification,
   hasReferenceImage,
+  logoAttached,
   aspectRatio,
   brandDna,
 }: TemplateInput): string {
-  const { titulo, estilo, resumen } = classification;
+  const { titulo, estilo, resumen, textosExactos } = classification;
 
   const details = formatDetails([
     ["Mensaje/título principal", titulo],
@@ -23,19 +26,20 @@ export function buildSocialPostPrompt({
 
   return `Design a scroll-stopping social media graphic.
 
-Brief from the user (source of truth for content): "${userPrompt}"${details}
-Summary: ${resumen}
+Brief from the user (source of truth for content): "${userPrompt}"${details}${formatExactTexts(textosExactos)}
+Summary: ${resumen}${formatAttachments(hasReferenceImage, logoAttached)}
 
 Design requirements:
 - One clear focal point — don't cram multiple competing messages into the frame.
-- Only add text/caption to the image if "Mensaje/título principal" is present above or the brief clearly describes a specific caption to show (plus brand contact info only if the Brand DNA section below asks for it) — never render any other sentence, instruction or commentary from the brief as text. If text is added, keep it short, fully legible and spelled exactly as intended, using bold contemporary typography.
+- Only add text to the image from the "Exact on-image text" above (or "Mensaje/título principal" if that list is absent), plus the brand name/contact only if the Brand DNA section below asks for it — never render any other sentence, instruction or commentary from the brief as text. Keep it short, fully legible and spelled exactly as given, using bold contemporary typography.
 - Modern, on-trend color palette that feels intentional and brand-consistent, not default AI pastel gradients.
 - Composition should feel like it was art-directed for social media (rule-of-thirds, negative space used purposefully), not a centered stock illustration.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? "- Use the attached reference image as the subject/brand basis and integrate it naturally into the design." : ""}
+${hasReferenceImage ? "- Feature the subject/product from the user's reference image faithfully (same shape, colors, graphics) and integrate it naturally into the design." : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
 ${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,
-    includeLogo: classification.incluirLogo,
+    includeBrand: classification.incluirMarca,
+    logoAttached,
   })}`;
 }

@@ -35,30 +35,53 @@ export function formatDetails(
   return lines.length ? `\nExtracted details:\n${lines.join("\n")}` : "";
 }
 
+// Textos que el usuario quiere literalmente en la imagen, tal cual los
+// escribió (el clasificador los extrae sin corregir ortografía de nombres).
+export function formatExactTexts(texts: string[] | undefined): string {
+  const clean = (texts ?? []).map((t) => t.trim()).filter(Boolean);
+  return clean.length
+    ? `\nExact on-image text (render each one verbatim, nothing more):\n${clean.map((t) => `- "${t}"`).join("\n")}`
+    : "";
+}
+
 export interface BrandDnaUsage {
   includeContact?: boolean;
-  includeLogo?: boolean;
+  includeBrand?: boolean;
+  logoAttached?: boolean;
+}
+
+// Describe las imágenes adjuntas por número, para que el modelo (y el paso de
+// director de arte) sepa cuál es la referencia del usuario y cuál el logo.
+export function formatAttachments(hasReferenceImage: boolean, logoAttached: boolean): string {
+  const lines: string[] = [];
+  let index = 1;
+  if (hasReferenceImage) lines.push(`- Image ${index++}: the user's reference image (subject/product to feature).`);
+  if (logoAttached) lines.push(`- Image ${index}: the brand logo — reproduce it exactly as provided.`);
+  return lines.length ? `\nAttached images:\n${lines.join("\n")}` : "";
 }
 
 // Inyecta el ADN de marca del cliente (si eligió uno) como guía de diseño
 // adicional — nunca reemplaza las reglas de la plantilla, solo las enriquece
-// con contexto de marca real. Contacto y logo NO se incluyen por defecto: el
-// clasificador decide (o le pregunta al usuario) si tienen sentido en esta
-// imagen concreta.
+// con contexto de marca real. Contacto y marca visible (logo/nombre) NO se
+// incluyen por defecto: el clasificador decide (o le pregunta al usuario) si
+// tienen sentido en esta imagen concreta.
 export function formatBrandDna(
   brandDna: BrandDna | undefined,
-  { includeContact = false, includeLogo = false }: BrandDnaUsage = {}
+  { includeContact = false, includeBrand = false, logoAttached = false }: BrandDnaUsage = {}
 ): string {
   if (!brandDna) return "";
 
   const lines: string[] = [];
+  if (brandDna.name) lines.push(`- Brand name: "${brandDna.name}"`);
   if (brandDna.whatTheyDo) lines.push(`- What the brand does/sells: "${brandDna.whatTheyDo}"`);
   if (brandDna.tone) lines.push(`- Brand tone: "${brandDna.tone}"`);
   if (brandDna.audience) lines.push(`- Target audience: "${brandDna.audience}"`);
   if (brandDna.styleNotes) lines.push(`- Additional style notes: "${brandDna.styleNotes}"`);
-  if (includeLogo && brandDna.logoImage) {
+  if (includeBrand) {
     lines.push(
-      `- This brand has a logo on file. Leave clean, uncluttered visual space (e.g. a corner or footer) where a logo could naturally be placed, without inventing or drawing a substitute logo yourself.`
+      logoAttached
+        ? `- Show the brand logo from the attached logo image, exactly as provided (never redraw, restyle or invent a logo), placed small and clean like a professional signature (e.g. a corner or footer).`
+        : `- Make the piece clearly branded: show the brand name "${brandDna.name}" as a clean, discreet wordmark (e.g. a corner or footer), spelled exactly.`
     );
   }
   const contactParts = [brandDna.contactPhone, brandDna.contactWebsite, brandDna.contactAddress]
@@ -70,8 +93,10 @@ export function formatBrandDna(
     );
   }
   if (brandDna.colors.length) {
+    // Sin esta aclaración el modelo llegó a "dibujar" los códigos hex y
+    // muestras de color como si fueran parte del diseño.
     lines.push(
-      `- Brand color palette (use these as the dominant colors when it fits the design): ${brandDna.colors.join(", ")}`
+      `- Brand color palette (use these as the dominant colors of the design): ${brandDna.colors.join(", ")}. These codes are only a color reference — NEVER render hex codes, color names, color swatches or a palette legend in the image.`
     );
   }
 

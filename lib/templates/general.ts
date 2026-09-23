@@ -3,35 +3,39 @@ import {
   ANTI_AI_LOOK,
   BRIEF_IS_DESCRIPTION_ONLY,
   formatAspectRatio,
+  formatAttachments,
   formatBrandDna,
   formatDetails,
+  formatExactTexts,
 } from "./shared";
 
 export function buildGeneralPrompt({
   userPrompt,
   classification,
   hasReferenceImage,
+  logoAttached,
   aspectRatio,
   brandDna,
 }: TemplateInput): string {
-  const { estilo, resumen } = classification;
+  const { estilo, resumen, textosExactos } = classification;
 
   const details = formatDetails([["Estilo pedido por el usuario", estilo]]);
 
   return `Create a high-quality, professional image based on this brief.
 
-Brief from the user (source of truth for content): "${userPrompt}"${details}
-Summary: ${resumen}
+Brief from the user (source of truth for content): "${userPrompt}"${details}${formatExactTexts(textosExactos)}
+Summary: ${resumen}${formatAttachments(hasReferenceImage, logoAttached)}
 
 Design requirements:
 - Thoughtful composition with a clear focal point and purposeful use of space.
 - Realistic textures, materials and lighting appropriate to the subject.
-- Do NOT add any text, caption or words to the image unless the brief explicitly describes a sign, label or written text as part of the scene, or the Brand DNA section below explicitly asks for contact info — if so, spell it EXACTLY as intended and fully legible.
+- Do NOT add any text, caption or words to the image unless listed in "Exact on-image text" above, the brief explicitly describes a sign/label as part of the scene, or the Brand DNA section below explicitly asks for it — if so, spell it EXACTLY as given and fully legible.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? "- Use the attached reference image as the basis, preserving its key subject/identity while applying the requested changes." : ""}
+${hasReferenceImage ? "- Use the user's reference image as the basis, preserving its key subject/identity while applying the requested changes." : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
 ${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,
-    includeLogo: classification.incluirLogo,
+    includeBrand: classification.incluirMarca,
+    logoAttached,
   })}`;
 }

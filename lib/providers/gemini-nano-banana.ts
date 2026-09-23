@@ -16,22 +16,16 @@ function getClient(): GoogleGenAI {
 }
 
 export class GeminiNanoBananaProvider implements ImageProvider {
-  async generate(prompt: string, referenceImage?: ReferenceImage, aspectRatio: AspectRatio = "1:1") {
+  async generate(prompt: string, images: ReferenceImage[], aspectRatio: AspectRatio = "1:1") {
     const ai = getClient();
 
     const parts: Array<
       | { text: string }
       | { inlineData: { mimeType: string; data: string } }
-    > = [{ text: prompt }];
-
-    if (referenceImage) {
-      parts.push({
-        inlineData: {
-          mimeType: referenceImage.mimeType,
-          data: referenceImage.base64,
-        },
-      });
-    }
+    > = [
+      { text: prompt },
+      ...images.map((image) => ({ inlineData: { mimeType: image.mimeType, data: image.base64 } })),
+    ];
 
     let response;
     try {

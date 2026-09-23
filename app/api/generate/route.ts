@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { classifyPrompt, MAX_CLARIFICATION_ROUNDS, CATEGORIES, type Category } from "@/lib/classifier";
 import { buildPromptForCategory } from "@/lib/templates";
-import { ImageRefusedError, type ImageProvider } from "@/lib/providers/image-provider";
+import {
+  ImageRefusedError,
+  type ImageProvider,
+  type ReferenceImage,
+} from "@/lib/providers/image-provider";
+import { directArt } from "@/lib/art-director";
 import { GeminiNanoBananaProvider } from "@/lib/providers/gemini-nano-banana";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 import { isAspectRatio } from "@/lib/aspect-ratio";
@@ -15,6 +20,11 @@ import {
 export const runtime = "nodejs";
 
 const provider: ImageProvider = new GeminiNanoBananaProvider();
+
+function parseDataUrl(dataUrl: string | undefined): ReferenceImage | undefined {
+  const match = dataUrl?.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/);
+  return match ? { mimeType: match[1], base64: match[2] } : undefined;
+}
 
 export async function POST(request: Request) {
   const clientKey = getClientKey(request);
@@ -79,8 +89,10 @@ export async function POST(request: Request) {
     const classification = await classifyPrompt(prompt, {
       categoryHint,
       allowQuestions: canAskQuestions,
+      referenceImage,
       brandContext: brandDna
         ? {
+            brandName: brandDna.name,
             hasContact: Boolean(brandDna.contactPhone || brandDna.contactWebsite || brandDna.contactAddress),
             hasLogo: Boolean(brandDna.logoImage),
           }
@@ -95,21 +107,39 @@ export async function POST(request: Request) {
       });
     }
 
-    const compiledPrompt = buildPromptForCategory(classification.categoria, {
+    // El logo real del ADN se manda como imagen adicional (Nano Banana acepta
+    // varias), en vez de solo "dejar espacio" — nunca en retratos.
+    const logoImage =
+      classification.incluirMarca && classification.categoria !== "retrato_avatar"
+        ? parseDataUrl(brandDna?.logoImage)
+        : undefined;
+
+    const guidelines = buildPromptForCategory(classification.categoria, {
       userPrompt: prompt,
       classification,
       hasReferenceImage: Boolean(referenceImage),
+      logoAttached: Boolean(logoImage),
       aspectRatio,
       brandDna,
     });
 
+    const finalPrompt = await directArt(guidelines);
+
     if (process.env.NODE_ENV !== "production") {
-      console.info(`[prompt compilado · ${classification.categoria}]\n${compiledPrompt}`);
+      console.info(`[pautas de plantilla · ${classification.categoria}]\n${guidelines}`);
+      console.info(`[prompt del director de arte]\n${finalPrompt}`);
     }
+
+    // Solo en desarrollo: revisar el razonamiento sin pagar una imagen.
+    if (process.env.NODE_ENV !== "production" && formData.get("dryRun") === "1") {
+      return NextResponse.json({ dryRun: true, classification, logoAttached: Boolean(logoImage), finalPrompt });
+    }
+
+    const images = [referenceImage, logoImage].filter((img): img is ReferenceImage => Boolean(img));
 
     // La proporción se asegura en el navegador (lib/image-client.ts), porque
     // Workers no puede usar librerías nativas de imagen como sharp.
-    const result = await provider.generate(compiledPrompt, referenceImage, aspectRatio);
+    const result = await provider.generate(finalPrompt, images, aspectRatio);
 
     return NextResponse.json({
       image: `data:${result.mimeType};base64,${result.base64}`,
