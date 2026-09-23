@@ -27,6 +27,7 @@ export interface ClassificationResult {
   beneficios?: string[];
   precioAntes?: string;
   precioAhora?: string;
+  modoVisual?: "fotografia" | "ilustracion";
   incluirContacto?: boolean;
   incluirMarca?: boolean;
   necesitaAclaracion?: boolean;
@@ -126,6 +127,14 @@ antes/ahora) el "titulo" se mantiene informativo y profesional, sin forzar urgen
 Eventos: "textosExactos" debe incluir siempre el nombre del evento, la fecha, la hora y el lugar
 si el usuario los dio (el lugar tal cual lo escribió), además de datos clave como "Entrada gratis".
 
+"modoVisual": "fotografia" (default, úsalo salvo lo indicado abajo) o "ilustracion". Marca
+"ilustracion" SOLO cuando el propio pedido del usuario pide explícitamente una estética
+dibujada/animada/de caricatura/ilustrada (ej. "animada", "animación", "caricatura",
+"ilustración", "dibujo", "estilo Pixar/Disney/anime", "cartoon", "flat design", "acuarela",
+"dibujado a mano"). Que el usuario adjunte una foto de referencia NO implica ilustración por sí
+sola — sigue siendo "fotografia" salvo que el pedido también pida explícitamente el look
+dibujado/animado.
+
 Sobre "incluirContacto" e "incluirMarca": solo aplican si el mensaje indica que el usuario eligió
 un ADN de marca. "incluirMarca" = que la imagen muestre la marca (su logo, o su nombre si no hay
 logo). Decide si corresponde usarlos en ESTA imagen:
@@ -189,6 +198,12 @@ const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description:
         "Precio rebajado, solo si el usuario dio un antes/ahora explícito y comparativo. Vacío en cualquier otro caso.",
+    },
+    modoVisual: {
+      type: Type.STRING,
+      enum: ["fotografia", "ilustracion"],
+      description:
+        "'ilustracion' solo si el usuario pidió explícitamente una estética dibujada/animada/de caricatura. 'fotografia' en cualquier otro caso.",
     },
     incluirContacto: {
       type: Type.BOOLEAN,
@@ -394,6 +409,10 @@ function sanitizeClassification(parsed: ClassificationResult, userPrompt: string
   if (!parsed.preguntas?.length) {
     parsed.necesitaAclaracion = false;
   }
+
+  // Blindaje: cualquier valor que no sea exactamente "ilustracion" cae al
+  // modo por defecto (fotografía), la fortaleza probada de la app.
+  parsed.modoVisual = parsed.modoVisual === "ilustracion" ? "ilustracion" : "fotografia";
 
   return parsed;
 }

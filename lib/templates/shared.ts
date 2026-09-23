@@ -16,8 +16,12 @@ export function formatAspectRatio(aspectRatio: AspectRatio): string {
 }
 
 // Reglas de dirección de arte reusadas por todas las plantillas para evitar
-// el look genérico de "imagen hecha con IA".
+// el look genérico de "imagen hecha con IA". Solo para modoVisual="fotografia".
 export const ANTI_AI_LOOK = `Avoid the typical "AI-generated" look: no perfectly symmetrical faces, no waxy/plastic skin, no oversaturated rainbow gradients, no generic stock-photo feel, no meaningless decorative squiggles, no warped or gibberish text. Instead use: real photographic or print-design texture, intentional asymmetry where appropriate, a limited and coherent color palette, authentic lighting, and professional graphic-design typography with correct hierarchy.`;
+
+// Equivalente a ANTI_AI_LOOK pero para modoVisual="ilustracion" — los defectos
+// típicos de una ilustración de IA son distintos a los de una foto de IA.
+export const ANTI_AI_ILLUSTRATION_LOOK = `Avoid the typical "AI-illustration" look: no inconsistent character proportions between elements, no garbled extra fingers/limbs, no generic disconnected clip-art feel, no meaningless floating elements with no relation to the scene, no warped or gibberish text. Instead use: intentional, consistent character design, a considered and harmonious color palette, real illustrative texture (linework, brushwork or flat shapes as the chosen style calls for), and professional typography integrated into the illustration, not a separate caption.`;
 
 // Blindaje contra prompt injection hacia el modelo de imagen: el brief del
 // usuario se cita textualmente en el prompt final, así que sin esto un
@@ -41,6 +45,12 @@ export function formatDetails(
 // color de un gráfico al look "oficial" de un personaje, o inclinarlo y
 // perder detalles). Se trata como una foto de producto real que no se toca.
 export const REFERENCE_FIDELITY = `- Every product/subject from the user's reference image(s) must appear EXACTLY as in those photos: identical shape, proportions, colors, materials, finish and every printed graphic, logo and text on it. Do not redraw, recolor, restyle, simplify or "correct" any part of it (never change a graphic's colors to match a character's official look). It may be shown upright or with a slight dynamic tilt, but its appearance must stay identical.`;
+
+// Igual que REFERENCE_FIDELITY, pero para cuando el usuario pidió que la
+// pieza sea una ilustración: el sujeto/producto de la referencia debe seguir
+// siendo reconocible (forma, colores), pero SÍ se redibuja por completo en el
+// estilo ilustrado elegido — lo contrario de "reproducido sin cambios".
+export const ILLUSTRATION_REFERENCE_FIDELITY = `- The product/subject from the user's reference image(s) must stay recognizable (same overall shape, proportions and colors), but fully redrawn in the illustration style described above — never a photographic reproduction pasted into the illustrated scene.`;
 
 // Edición de una imagen ya generada: a diferencia de REFERENCE_FIDELITY (que
 // exige reproducir un producto/persona sin ningún cambio), aquí la

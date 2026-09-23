@@ -1,5 +1,6 @@
 import type { TemplateInput } from "./types";
 import {
+  ANTI_AI_ILLUSTRATION_LOOK,
   ANTI_AI_LOOK,
   BRIEF_IS_DESCRIPTION_ONLY,
   EDIT_FIDELITY,
@@ -9,6 +10,7 @@ import {
   formatDetails,
   formatExactTexts,
   formatPricePromo,
+  ILLUSTRATION_REFERENCE_FIDELITY,
   REFERENCE_FIDELITY,
 } from "./shared";
 
@@ -21,6 +23,7 @@ export function buildPosterPrompt({
   aspectRatio,
   brandDna,
   isEdit,
+  modoVisual,
 }: TemplateInput): string {
   const { titulo, fecha, hora, lugar, estilo, resumen, textosExactos } = classification;
 
@@ -44,9 +47,9 @@ Design requirements:
 - Coherent color palette and composition matching the tone${estilo ? ` (${estilo})` : ""}.
 - Balanced layout with intentional margins and breathing room, never cluttered — a deliberately designed composition (symmetric or asymmetric as the concept demands), with text never overlapping the hero.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? (isEdit ? `- The reference image is the previous version of this poster — apply the requested change to it.\n${EDIT_FIDELITY}` : `- Feature the subject/product from the user's reference image as the hero of the poster.\n${REFERENCE_FIDELITY}`) : ""}
+${hasReferenceImage ? (isEdit ? `- The reference image is the previous version of this poster — apply the requested change to it.\n${EDIT_FIDELITY}` : `- Feature the subject/product from the user's reference image as the hero of the poster.\n${modoVisual === "ilustracion" ? ILLUSTRATION_REFERENCE_FIDELITY : REFERENCE_FIDELITY}`) : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
-${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
+${modoVisual === "ilustracion" ? ANTI_AI_ILLUSTRATION_LOOK : ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,
     includeBrand: classification.incluirMarca,
     logoAttached,

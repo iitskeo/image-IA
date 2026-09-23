@@ -211,9 +211,16 @@ export async function POST(request: Request) {
       aspectRatio,
       brandDna,
       isEdit,
+      modoVisual: classification.modoVisual,
     });
 
-    const direction = await directArt(guidelines, textPlan, classification.categoria, referenceImages.length > 0);
+    const direction = await directArt(
+      guidelines,
+      textPlan,
+      classification.categoria,
+      referenceImages.length > 0,
+      classification.modoVisual ?? "fotografia"
+    );
     const finalPrompt =
       direction.prompt +
       buildTextLock(allowedTexts, referenceImages.length > 0 && !isPortrait, Boolean(logoImage));

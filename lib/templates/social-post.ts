@@ -1,5 +1,6 @@
 import type { TemplateInput } from "./types";
 import {
+  ANTI_AI_ILLUSTRATION_LOOK,
   ANTI_AI_LOOK,
   BRIEF_IS_DESCRIPTION_ONLY,
   EDIT_FIDELITY,
@@ -9,6 +10,7 @@ import {
   formatDetails,
   formatExactTexts,
   formatPricePromo,
+  ILLUSTRATION_REFERENCE_FIDELITY,
   REFERENCE_FIDELITY,
 } from "./shared";
 
@@ -21,6 +23,7 @@ export function buildSocialPostPrompt({
   aspectRatio,
   brandDna,
   isEdit,
+  modoVisual,
 }: TemplateInput): string {
   const { titulo, estilo, resumen, textosExactos } = classification;
 
@@ -40,9 +43,9 @@ Design requirements:
 - Modern, on-trend color palette that feels intentional and brand-consistent, not default AI pastel gradients.
 - Composition should feel like it was art-directed for social media (rule-of-thirds, negative space used purposefully), not a centered stock illustration.
 ${formatAspectRatio(aspectRatio)}
-${hasReferenceImage ? (isEdit ? `- The reference image is the previous version of this design — apply the requested change to it.\n${EDIT_FIDELITY}` : `- Feature the subject/product from the user's reference image as the hero of the design.\n${REFERENCE_FIDELITY}`) : ""}
+${hasReferenceImage ? (isEdit ? `- The reference image is the previous version of this design — apply the requested change to it.\n${EDIT_FIDELITY}` : `- Feature the subject/product from the user's reference image as the hero of the design.\n${modoVisual === "ilustracion" ? ILLUSTRATION_REFERENCE_FIDELITY : REFERENCE_FIDELITY}`) : ""}
 ${BRIEF_IS_DESCRIPTION_ONLY}
-${ANTI_AI_LOOK}${formatBrandDna(brandDna, {
+${modoVisual === "ilustracion" ? ANTI_AI_ILLUSTRATION_LOOK : ANTI_AI_LOOK}${formatBrandDna(brandDna, {
     includeContact: classification.incluirContacto,
     includeBrand: classification.incluirMarca,
     logoAttached,

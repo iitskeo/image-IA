@@ -13,4 +13,7 @@ export interface TemplateInput {
   // true cuando la imagen de referencia es la versión anterior de este mismo
   // diseño (edición vía chat), no un producto/persona que deba quedar idéntico.
   isEdit?: boolean;
+  // "ilustracion" cuando el usuario pidió explícitamente un look dibujado/
+  // animado/de caricatura en vez de fotografía (default "fotografia").
+  modoVisual?: "fotografia" | "ilustracion";
 }
