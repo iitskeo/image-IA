@@ -1,11 +1,12 @@
 export class ValidationError extends Error {}
 
-// El límite de texto que se escribe en el composer es 800 (ver textarea en
-// app/page.tsx), pero el prompt que llega aquí puede ser ese texto original
-// más hasta 2 rondas de "Detalles adicionales" añadidas automáticamente por
-// el flujo de aclaración — de ahí el margen extra, para que ese anexado
-// automático nunca se autorrechace por longitud.
-export const MAX_PROMPT_LENGTH = 2000;
+// El límite de texto que se escribe en el composer es 3000 (ver textarea en
+// app/page.tsx) y 1500 en el popup de edición, pero el prompt que llega aquí
+// puede ser ese texto original más hasta 2 rondas de "Detalles adicionales"
+// del flujo de aclaración, o el prompt raíz + la instrucción de una edición
+// — de ahí el margen extra, para que ese anexado automático nunca se
+// autorrechace por longitud.
+export const MAX_PROMPT_LENGTH = 8000;
 // Un prompt corto ya no se rechaza aquí — el clasificador decide si es
 // demasiado vago y, en ese caso, hace preguntas de aclaración en vez de
 // bloquear al usuario con un error genérico.

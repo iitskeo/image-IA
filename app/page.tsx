@@ -580,7 +580,7 @@ export default function Home() {
         onChange={(e) => setPrompt(e.target.value)}
         placeholder={t.placeholder}
         rows={3}
-        maxLength={800}
+        maxLength={3000}
         className="w-full resize-none rounded-xl bg-transparent p-2 text-sm text-foreground outline-none placeholder:text-foreground/35"
       />
 

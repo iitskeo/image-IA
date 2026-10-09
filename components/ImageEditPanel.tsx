@@ -91,7 +91,7 @@ export function ImageEditPanel({ open, onClose, turn, onSubmit, t }: ImageEditPa
               onChange={(e) => setInstruction(e.target.value)}
               placeholder={t.editPlaceholder}
               rows={4}
-              maxLength={400}
+              maxLength={1500}
               className="min-h-24 w-full flex-1 resize-none rounded-xl border border-line bg-background p-2.5 text-sm text-foreground outline-none placeholder:text-foreground/35 focus:border-transparent focus:ring-2 focus:ring-[color-mix(in_srgb,var(--accent-from)_45%,transparent)] md:min-h-36 md:p-3.5 md:text-base"
             />
           </div>
